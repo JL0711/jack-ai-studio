@@ -1,0 +1,19 @@
+# dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# environment files (keep the example)
+.env
+.env.*
+!.env.example
+
+# local tooling
+.venv*/
+supabase/.venv/
+__pycache__/
+*.log
+.DS_Store
+
+# local editor / agent config
+.claude/

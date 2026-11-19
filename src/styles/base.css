@@ -1,0 +1,173 @@
+/* Reset, typography and page layout. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:lang(zh-CN) body,
+html[lang='zh-CN'] body {
+  letter-spacing: 0.01em;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  margin: 0 0 0.5em;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.6rem);
+}
+h2 {
+  font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.65rem);
+}
+h3 {
+  font-size: 1.1rem;
+}
+p {
+  margin: 0 0 1em;
+}
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+a:hover {
+  color: var(--accent-hover);
+}
+img,
+svg {
+  max-width: 100%;
+}
+img {
+  height: auto;
+  display: block;
+}
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 100;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+/* ---------- layout ---------- */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.app main {
+  flex: 1;
+}
+.container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.container.narrow {
+  max-width: 760px;
+}
+.page {
+  padding: 40px 0 72px;
+}
+.page-head {
+  margin-bottom: 28px;
+}
+.page-head p {
+  color: var(--text-muted);
+  max-width: 62ch;
+}
+.eyebrow {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.muted {
+  color: var(--text-muted);
+}
+.small {
+  font-size: 0.875rem;
+}
+.stack > * + * {
+  margin-top: 16px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.spacer {
+  flex: 1;
+}
+.break-anywhere {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .container {
+    padding: 0 16px;
+  }
+  .page {
+    padding: 28px 0 56px;
+  }
+}
