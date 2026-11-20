@@ -3,6 +3,7 @@
 //  - supabaseStore.ts real database (RLS enforces permissions)
 
 import type {
+  ApprovalStatus,
   Comment,
   ContactInput,
   ContactMessage,
@@ -55,6 +56,12 @@ export interface StudioApi {
 
   listProfiles(viewer: Viewer): Promise<Profile[]>;
   setRole(viewer: Viewer, userId: string, role: Role): Promise<void>;
+  /** Admin only: approve, reject, or restore an account to pending. */
+  setApproval(viewer: Viewer, userId: string, status: ApprovalStatus): Promise<void>;
+  /** The signed-in user's own profile row (role + approval), or null if there is none. */
+  getMyProfile(userId: string): Promise<Profile | null>;
+  /** Calls `onChange` when this user's own profile row changes (e.g. Jack approves it). */
+  watchProfile(userId: string, onChange: () => void): () => void;
 
   /** Calls `onChange` whenever data may have changed. Returns an unsubscribe function. */
   subscribe(onChange: () => void): () => void;

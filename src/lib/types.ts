@@ -6,6 +6,14 @@ export type ViewerRole = Role | 'visitor';
 
 export const ROLES: Role[] = ['client', 'family', 'admin'];
 
+/**
+ * Admin approval replaces email confirmation. Every new account starts
+ * 'pending' and sees nothing until Jack approves it. A user with role admin
+ * always counts as approved (see effectiveApproval in permissions.ts).
+ */
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export const APPROVAL_STATUSES: ApprovalStatus[] = ['pending', 'approved', 'rejected'];
+
 export type ProjectStatus = 'planning' | 'in_progress' | 'paused' | 'done';
 export const PROJECT_STATUSES: ProjectStatus[] = ['planning', 'in_progress', 'paused', 'done'];
 
@@ -89,6 +97,9 @@ export interface Profile {
   email: string | null;
   display_name: string | null;
   role: Role;
+  approval_status: ApprovalStatus;
+  approved_at: string | null;
+  approved_by: string | null;
   created_at: string;
 }
 
@@ -98,9 +109,11 @@ export interface Viewer {
   userId: string | null;
   email: string | null;
   displayName: string | null;
+  /** From the viewer's own profile row; 'pending' until it has loaded (fail closed). */
+  approval: ApprovalStatus;
 }
 
-export const VISITOR: Viewer = { role: 'visitor', userId: null, email: null, displayName: null };
+export const VISITOR: Viewer = { role: 'visitor', userId: null, email: null, displayName: null, approval: 'pending' };
 
 export interface ProjectInput {
   title: string;

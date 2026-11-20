@@ -13,6 +13,16 @@
 --            but never contact messages or client email addresses
 --    admin   Jack; can do everything
 --
+--  Approval (profiles.approval_status) replaces email confirmation:
+--    pending   every new sign-up; sees only their own profile row, nothing else
+--    approved  Jack has checked who they are; the role rules above apply
+--    rejected  same as pending, kept apart so Jack's review list stays short
+--    A user with role admin always counts as approved. Only an admin (or the
+--    SQL editor) can change approval fields. See section 8 for the commands.
+--
+--  Upgrading a database that ran an older version of this file: run
+--  migrations/002_admin_approval.sql (or this whole file again).
+--
 --  Milestone status codes → labels shown on the site:
 --    not_started = 未开始, in_progress = 进行中,
 --    pending_approval = 待验收, done = 已完成
@@ -28,8 +38,53 @@ create table if not exists public.profiles (
   email        text,
   display_name text check (display_name is null or char_length(display_name) <= 60),
   role         text not null default 'client' check (role in ('client', 'family', 'admin')),
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  approval_status text not null default 'pending'
+               check (approval_status in ('pending', 'approved', 'rejected')),
+  approved_at  timestamptz,
+  approved_by  uuid references public.profiles (id) on delete set null
 );
+
+-- Upgrade path for a profiles table created by an older version of this file
+-- (same as migrations/002_admin_approval.sql). approval_status is added
+-- together with its one-time backfill, so running this again never overrides
+-- a later decision (e.g. a family member Jack has since set back to pending).
+alter table public.profiles add column if not exists approved_at timestamptz;
+alter table public.profiles add column if not exists approved_by uuid;
+
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'approval_status'
+  ) then
+    alter table public.profiles
+      add column approval_status text not null default 'pending'
+      constraint profiles_approval_status_check
+      check (approval_status in ('pending', 'approved', 'rejected'));
+
+    update public.profiles
+       set approval_status = 'approved', approved_at = now()
+     where role in ('admin', 'family');
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.profiles'::regclass and conname = 'profiles_approval_status_check'
+  ) then
+    alter table public.profiles add constraint profiles_approval_status_check
+      check (approval_status in ('pending', 'approved', 'rejected'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.profiles'::regclass and conname = 'profiles_approved_by_fkey'
+  ) then
+    alter table public.profiles add constraint profiles_approved_by_fkey
+      foreign key (approved_by) references public.profiles (id) on delete set null;
+  end if;
+end;
+$$;
 
 create table if not exists public.projects (
   id           uuid primary key default gen_random_uuid(),
@@ -117,6 +172,20 @@ as $$
   select exists (select 1 from public.profiles where id = auth.uid() and role = 'family');
 $$;
 
+-- The approval gate. Every non-admin policy and RPC must also check this.
+-- Admin always counts as approved, whatever approval_status says, so Jack can
+-- never lock himself out.
+create or replace function public.is_approved()
+returns boolean
+language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and (role = 'admin' or approval_status = 'approved')
+  );
+$$;
+
 -- Lower-cased email from the caller's JWT ('' when signed out).
 create or replace function public.current_email()
 returns text
@@ -146,19 +215,20 @@ $$;
 -- 3. Triggers
 -- ───────────────────────────────────────────────────────────────────────────
 
--- 3a. Create a profile (role = client) for every new auth user.
+-- 3a. Create a profile (role client, approval pending) for every new auth user.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql security definer
 set search_path = public, pg_temp
 as $$
 begin
-  insert into public.profiles (id, email, display_name, role)
+  insert into public.profiles (id, email, display_name, role, approval_status)
   values (
     new.id,
     lower(new.email),
     nullif(left(btrim(coalesce(new.raw_user_meta_data ->> 'display_name', '')), 60), ''),
-    'client'                                  -- never trust a role from sign-up metadata
+    'client',                                 -- never trust a role from sign-up metadata
+    'pending'                                 -- every new account waits for Jack's approval
   )
   on conflict (id) do nothing;
   return new;
@@ -170,14 +240,25 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- Keep profiles.email in sync when a user changes their login email.
+-- Email change: keep profiles.email in sync and, because projects are matched
+-- by email, send an approved non-admin account back to 'pending'. (With
+-- "Confirm email" off, Supabase applies an email change immediately.)
+-- Rejected stays rejected; a change of letter case only keeps the status.
 create or replace function public.handle_user_email_change()
 returns trigger
 language plpgsql security definer
 set search_path = public, pg_temp
 as $$
 begin
-  update public.profiles set email = lower(new.email) where id = new.id;
+  update public.profiles
+     set email = lower(new.email),
+         approval_status = case
+           when role = 'admin' then approval_status
+           when approval_status = 'rejected' then 'rejected'
+           when lower(coalesce(old.email, '')) = lower(coalesce(new.email, '')) then approval_status
+           else 'pending'
+         end
+   where id = new.id;
   return new;
 end;
 $$;
@@ -189,31 +270,50 @@ create trigger on_auth_user_email_changed
   when (old.email is distinct from new.email)
   execute function public.handle_user_email_change();
 
--- 3b. Only an admin may change a role (or email/id). Enforced by a trigger,
---     not just a policy, so it holds even if a policy is loosened later.
---     SECURITY INVOKER on purpose: current_user is then the caller's database
---     role. API users run as 'anon'/'authenticated'; the SQL editor runs as
---     'postgres', so "make me admin" below still works there.
+-- 3b. Only an admin may change a role or the approval fields (or email/id).
+--     Enforced here, not just in a policy, so it holds even if a policy is
+--     loosened later. SECURITY INVOKER on purpose: current_user is then the
+--     caller's database role. API users run as 'anon'/'authenticated'; the SQL
+--     editor runs as 'postgres', so the commands in section 8 still work there.
+--     For allowed changes, approved_at/approved_by are stamped here from now()
+--     and auth.uid(), so they cannot be forged.
 create or replace function public.protect_profile_fields()
 returns trigger
 language plpgsql
 set search_path = public, pg_temp
 as $$
 begin
-  if current_user not in ('anon', 'authenticated') or public.is_admin() then
+  if current_user in ('anon', 'authenticated') and not public.is_admin() then
+    if tg_op = 'INSERT' then
+      new.role := 'client';
+      new.approval_status := 'pending';
+      new.approved_at := null;
+      new.approved_by := null;
+      return new;
+    end if;
+
+    if new.role is distinct from old.role then
+      raise exception 'only an admin can change roles' using errcode = '42501';
+    end if;
+    if new.approval_status is distinct from old.approval_status
+       or new.approved_at is distinct from old.approved_at
+       or new.approved_by is distinct from old.approved_by then
+      raise exception 'only an admin can change approval status' using errcode = '42501';
+    end if;
+    if new.email is distinct from old.email or new.id is distinct from old.id then
+      raise exception 'email and id are managed by Supabase Auth' using errcode = '42501';
+    end if;
     return new;
   end if;
 
-  if tg_op = 'INSERT' then
-    new.role := 'client';
-    return new;
-  end if;
-
-  if new.role is distinct from old.role then
-    raise exception 'only an admin can change roles' using errcode = '42501';
-  end if;
-  if new.email is distinct from old.email or new.id is distinct from old.id then
-    raise exception 'email and id are managed by Supabase Auth' using errcode = '42501';
+  if tg_op = 'UPDATE' and new.approval_status is distinct from old.approval_status then
+    if new.approval_status = 'approved' then
+      new.approved_at := now();
+      new.approved_by := auth.uid();         -- null when run from the SQL editor
+    else
+      new.approved_at := null;
+      new.approved_by := null;
+    end if;
   end if;
   return new;
 end;
@@ -338,9 +438,9 @@ create trigger updates_set_author
 -- 4. RPC functions
 -- ───────────────────────────────────────────────────────────────────────────
 
--- 4a. A client approves (确认验收) one of their own milestones that is 待验收.
---     Done as a narrow SECURITY DEFINER function instead of an UPDATE policy,
---     so a client can change exactly these three fields and nothing else.
+-- 4a. An approved client approves (确认验收) one of their own milestones that
+--     is 待验收. Done as a narrow SECURITY DEFINER function instead of an UPDATE
+--     policy, so a client can change exactly these three fields and nothing else.
 create or replace function public.approve_milestone(milestone_id uuid)
 returns public.milestones
 language plpgsql security definer
@@ -353,6 +453,9 @@ declare
 begin
   if auth.uid() is null or me = '' then
     raise exception 'not signed in' using errcode = '42501';
+  end if;
+  if not public.is_approved() then
+    raise exception 'your account has not been approved yet' using errcode = '42501';
   end if;
 
   select * into m from public.milestones where id = milestone_id for update;
@@ -402,6 +505,8 @@ grant execute on function public.admin_projects() to authenticated;
 -- ───────────────────────────────────────────────────────────────────────────
 -- 5. Row Level Security
 --    (select fn()) wrappers let Postgres evaluate the helper once per query.
+--    Every non-admin policy also requires (select public.is_approved()), so a
+--    pending or rejected account sees only its own profile row.
 -- ───────────────────────────────────────────────────────────────────────────
 
 alter table public.profiles         enable row level security;
@@ -412,7 +517,9 @@ alter table public.comments         enable row level security;
 alter table public.contact_messages enable row level security;
 
 -- profiles: you read your own row; admin reads all. You may update your own
--- display_name; the trigger above blocks role/email changes by non-admins.
+-- display_name; the trigger above blocks role/approval/email changes by
+-- non-admins. Admin approves or rejects with a plain update of
+-- approval_status (the trigger stamps approved_at/approved_by).
 drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles
   for select to authenticated
@@ -434,13 +541,14 @@ create policy "projects_admin_all" on public.projects
 drop policy if exists "projects_family_read" on public.projects;
 create policy "projects_family_read" on public.projects
   for select to authenticated
-  using ((select public.is_family()));
+  using ((select public.is_approved()) and (select public.is_family()));
 
 drop policy if exists "projects_client_read" on public.projects;
 create policy "projects_client_read" on public.projects
   for select to authenticated
   using (
-    client_email is not null
+    (select public.is_approved())
+    and client_email is not null
     and lower(client_email) = lower((select auth.jwt()) ->> 'email')
   );
 
@@ -454,7 +562,10 @@ create policy "milestones_admin_all" on public.milestones
 drop policy if exists "milestones_read" on public.milestones;
 create policy "milestones_read" on public.milestones
   for select to authenticated
-  using ((select public.is_family()) or public.is_project_client(project_id));
+  using (
+    (select public.is_approved())
+    and ((select public.is_family()) or public.is_project_client(project_id))
+  );
 
 -- updates: clients only see visibility = 'client'
 drop policy if exists "updates_admin_all" on public.updates;
@@ -467,8 +578,11 @@ drop policy if exists "updates_read" on public.updates;
 create policy "updates_read" on public.updates
   for select to authenticated
   using (
-    (select public.is_family())
-    or (visibility = 'client' and public.is_project_client(project_id))
+    (select public.is_approved())
+    and (
+      (select public.is_family())
+      or (visibility = 'client' and public.is_project_client(project_id))
+    )
   );
 
 -- comments: clients read and write on their own projects; family reads all
@@ -481,12 +595,19 @@ create policy "comments_admin_all" on public.comments
 drop policy if exists "comments_read" on public.comments;
 create policy "comments_read" on public.comments
   for select to authenticated
-  using ((select public.is_family()) or public.is_project_client(project_id));
+  using (
+    (select public.is_approved())
+    and ((select public.is_family()) or public.is_project_client(project_id))
+  );
 
 drop policy if exists "comments_client_insert" on public.comments;
 create policy "comments_client_insert" on public.comments
   for insert to authenticated
-  with check (author = (select auth.uid()) and public.is_project_client(project_id));
+  with check (
+    (select public.is_approved())
+    and author = (select auth.uid())
+    and public.is_project_client(project_id)
+  );
 
 -- contact_messages: anyone may send one (with limits); only admin reads.
 drop policy if exists "contact_insert" on public.contact_messages;
@@ -547,8 +668,9 @@ revoke truncate, references, trigger on public.profiles, public.projects, public
 
 
 -- ───────────────────────────────────────────────────────────────────────────
--- 7. Realtime (live refresh of progress, updates and comments)
---    Realtime applies the same RLS: each user only receives rows they can read.
+-- 7. Realtime (live refresh of progress, updates, comments and sign-ups)
+--    Realtime applies the same RLS: each user only receives rows they can read
+--    (for profiles: their own row; admin: every row).
 -- ───────────────────────────────────────────────────────────────────────────
 
 do $$
@@ -556,7 +678,7 @@ declare
   t text;
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-    foreach t in array array['projects', 'milestones', 'updates', 'comments', 'contact_messages'] loop
+    foreach t in array array['projects', 'milestones', 'updates', 'comments', 'contact_messages', 'profiles'] loop
       if not exists (
         select 1 from pg_publication_tables
         where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -570,16 +692,27 @@ $$;
 
 
 -- ───────────────────────────────────────────────────────────────────────────
--- 8. Make me admin / make family
---    First sign up on the site and confirm the email, then run ONE of these
---    lines here in the SQL editor with the real email address filled in.
+-- 8. Make me admin / make family / approve accounts
+--    First sign up on the site, then run ONE of these lines here in the SQL
+--    editor with the real email address filled in. (After you are admin you
+--    can also approve and change roles on the site: 我的项目 → 用户.)
 -- ───────────────────────────────────────────────────────────────────────────
 
--- make me admin:
+-- make me admin (admin always counts as approved):
 -- update public.profiles set role = 'admin' where email = lower('...');
 
--- make family:
+-- make family (they also need approving, see below):
 -- update public.profiles set role = 'family' where email = lower('...');
 
--- check who has which role:
--- select email, role, created_at from public.profiles order by created_at;
+-- approve an account by email, after checking who it really belongs to:
+-- update public.profiles set approval_status = 'approved' where email = lower('...');
+
+-- reject an account (it sees nothing; set it to 'pending' to restore):
+-- update public.profiles set approval_status = 'rejected' where email = lower('...');
+
+-- accounts waiting for approval:
+-- select email, display_name, created_at from public.profiles
+--  where approval_status = 'pending' and role <> 'admin' order by created_at;
+
+-- check who has which role and status:
+-- select email, role, approval_status, approved_at, created_at from public.profiles order by created_at;

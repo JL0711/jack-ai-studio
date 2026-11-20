@@ -50,6 +50,8 @@ export default function Login() {
         await auth.signIn(email, password);
         navigate('/dashboard');
       } else if (mode === 'signup') {
+        // "Confirm email" off: signed in already, so the dashboard shows the
+        // waiting-for-approval page. "Confirm email" on: ask them to check email.
         const res = await auth.signUp(email, password, displayName);
         if (res.needsConfirmation) setSent({ kind: 'signup', email: email.trim() });
         else navigate('/dashboard');
@@ -62,6 +64,8 @@ export default function Login() {
       if (/not confirmed/i.test(msg)) {
         setNotConfirmed(true);
         setError(t('auth.notConfirmed'));
+      } else if (/already (been )?registered|already exists/i.test(msg)) {
+        setError(t('auth.alreadyRegistered'));
       } else {
         setError(msg);
       }

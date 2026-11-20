@@ -9,12 +9,18 @@ export const DEMO_IDS = {
   otherClient: 'demo-other-client',
   family: 'demo-family',
   newUser: 'demo-new-user',
+  pending: 'demo-pending',
 } as const;
 
-export const DEMO_VIEWERS: Record<'client' | 'admin' | 'family', Viewer> = {
-  client: { role: 'client', userId: DEMO_IDS.client, email: 'client@example.com', displayName: '示例客户 Sample client' },
-  admin: { role: 'admin', userId: DEMO_IDS.admin, email: 'admin@example.com', displayName: 'Jack' },
-  family: { role: 'family', userId: DEMO_IDS.family, email: 'family@example.com', displayName: '家人 Family' },
+/** The identities the demo banner can switch between ('pending' = a sign-up waiting for Jack). */
+export type DemoIdentity = 'visitor' | 'client' | 'pending' | 'admin' | 'family';
+export const DEMO_IDENTITIES: DemoIdentity[] = ['visitor', 'client', 'pending', 'admin', 'family'];
+
+export const DEMO_VIEWERS: Record<Exclude<DemoIdentity, 'visitor'>, Viewer> = {
+  client: { role: 'client', userId: DEMO_IDS.client, email: 'client@example.com', displayName: '示例客户 Sample client', approval: 'approved' },
+  pending: { role: 'client', userId: DEMO_IDS.pending, email: 'pending@example.com', displayName: '待审核示例用户 Pending sample user', approval: 'pending' },
+  admin: { role: 'admin', userId: DEMO_IDS.admin, email: 'admin@example.com', displayName: 'Jack', approval: 'approved' },
+  family: { role: 'family', userId: DEMO_IDS.family, email: 'family@example.com', displayName: '家人 Family', approval: 'approved' },
 };
 
 export interface DemoSeed {
@@ -40,12 +46,19 @@ function at(now: Date, offsetDays: number, hour = 10): string {
 
 /** Builds fresh sample data with dates relative to `now`. */
 export function buildDemoSeed(now: Date = new Date()): DemoSeed {
+  const approved = (offsetDays: number, by: string | null = DEMO_IDS.admin) => ({
+    approval_status: 'approved' as const,
+    approved_at: at(now, offsetDays, 11),
+    approved_by: by,
+  });
   const profiles: Profile[] = [
-    { id: DEMO_IDS.admin, email: 'admin@example.com', display_name: 'Jack', role: 'admin', created_at: at(now, -90) },
-    { id: DEMO_IDS.client, email: 'client@example.com', display_name: '示例客户 Sample client', role: 'client', created_at: at(now, -40) },
-    { id: DEMO_IDS.otherClient, email: 'other@example.com', display_name: '另一位示例客户 Another sample client', role: 'client', created_at: at(now, -30) },
-    { id: DEMO_IDS.family, email: 'family@example.com', display_name: '家人 Family', role: 'family', created_at: at(now, -88) },
-    { id: DEMO_IDS.newUser, email: 'new@example.com', display_name: null, role: 'client', created_at: at(now, -1) },
+    { id: DEMO_IDS.admin, email: 'admin@example.com', display_name: 'Jack', role: 'admin', ...approved(-90, null), created_at: at(now, -90) },
+    { id: DEMO_IDS.client, email: 'client@example.com', display_name: '示例客户 Sample client', role: 'client', ...approved(-40), created_at: at(now, -40) },
+    { id: DEMO_IDS.otherClient, email: 'other@example.com', display_name: '另一位示例客户 Another sample client', role: 'client', ...approved(-30), created_at: at(now, -30) },
+    { id: DEMO_IDS.family, email: 'family@example.com', display_name: '家人 Family', role: 'family', ...approved(-88), created_at: at(now, -88) },
+    { id: DEMO_IDS.newUser, email: 'new@example.com', display_name: null, role: 'client', ...approved(-1), created_at: at(now, -1) },
+    // Signed up, waiting for Jack. Its email matches demo-p5, which it must not see until approved.
+    { id: DEMO_IDS.pending, email: 'pending@example.com', display_name: '待审核示例用户 Pending sample user', role: 'client', approval_status: 'pending', approved_at: null, approved_by: null, created_at: at(now, 0, 7) },
   ];
 
   const projects: Project[] = [
@@ -97,6 +110,18 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
       created_at: at(now, -60),
       updated_at: at(now, -45),
     },
+    {
+      id: 'demo-p5',
+      title: '示例：预约小网站 · Sample: booking site',
+      summary: '演示用项目，属于「待审核示例用户」：Jack 通过审核前，这个账号看不到它。Belongs to the pending sample user, who can’t see it until Jack approves the account.',
+      status: 'planning',
+      progress: 5,
+      stage: '需求沟通 · Requirements',
+      client_email: 'pending@example.com',
+      archived: false,
+      created_at: at(now, 0, 6),
+      updated_at: at(now, 0, 6),
+    },
   ];
 
   const milestones: Milestone[] = [
@@ -108,6 +133,7 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
     { id: 'demo-m6', project_id: 'demo-p2', title: '首批 30% 交付 · First 30% delivery', due_date: day(now, 19), status: 'not_started', payment_note: '30%', sort: 2, approved_by: null, approved_at: null },
     { id: 'demo-m7', project_id: 'demo-p3', title: '模型安装与基准测试 · Model install & benchmark', due_date: day(now, 6), status: 'pending_approval', payment_note: '50%', sort: 1, approved_by: null, approved_at: null },
     { id: 'demo-m8', project_id: 'demo-p3', title: '使用培训 · Walkthrough', due_date: day(now, 13), status: 'not_started', payment_note: '50%', sort: 2, approved_by: null, approved_at: null },
+    { id: 'demo-m10', project_id: 'demo-p5', title: '需求确认 · Requirements sign-off', due_date: day(now, 7), status: 'not_started', payment_note: '30%', sort: 1, approved_by: null, approved_at: null },
     { id: 'demo-m9', project_id: 'demo-p4', title: '脚本交付 · Script delivered', due_date: day(now, -46), status: 'done', payment_note: '100%', sort: 1, approved_by: DEMO_IDS.otherClient, approved_at: at(now, -45) },
   ];
 
@@ -117,6 +143,7 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
     { id: 'demo-u3', project_id: 'demo-p1', body: '内部备注：部分扫描件文字识别质量一般，问答阶段可能要多留两天。Internal: some scans have poor OCR; may need two extra days.', visibility: 'internal', created_by: DEMO_IDS.admin, created_at: at(now, -1, 17) },
     { id: 'demo-u4', project_id: 'demo-p2', body: '收到需求说明，正在整理成书面计划。Got the brief; writing it up as a plan.', visibility: 'client', created_by: DEMO_IDS.admin, created_at: at(now, -2, 11) },
     { id: 'demo-u5', project_id: 'demo-p3', body: '模型已装好，等待客户验收。Model installed, waiting for client sign-off.', visibility: 'client', created_by: DEMO_IDS.admin, created_at: at(now, 0, 9) },
+    { id: 'demo-u7', project_id: 'demo-p5', body: '项目已建好，等你的账号审核通过后就能在这里看到进度。Project set up; you’ll see progress here once your account is approved.', visibility: 'client', created_by: DEMO_IDS.admin, created_at: at(now, 0, 6) },
     { id: 'demo-u6', project_id: 'demo-p3', body: '内部备注：下周三晚上安排培训。Internal: walkthrough planned for next Wednesday evening.', visibility: 'internal', created_by: DEMO_IDS.admin, created_at: at(now, 0, 9) },
   ];
 

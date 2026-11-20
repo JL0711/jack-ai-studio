@@ -17,9 +17,11 @@ const MILESTONE_COLUMNS = 'id,project_id,title,due_date,status,payment_note,sort
 const UPDATE_COLUMNS = 'id,project_id,body,visibility,created_by,created_at';
 const COMMENT_COLUMNS = 'id,project_id,author,author_name,body,created_at';
 const MESSAGE_COLUMNS = 'id,name,contact,project_type,budget,message,handled,created_at';
-const PROFILE_COLUMNS = 'id,email,display_name,role,created_at';
+const PROFILE_COLUMNS = 'id,email,display_name,role,approval_status,approved_at,approved_by,created_at';
 
-const LIVE_TABLES = ['projects', 'milestones', 'updates', 'comments', 'contact_messages'] as const;
+// profiles is included so the admin's Users page and pending badge update when
+// someone signs up. RLS limits everyone else to events for their own row.
+const LIVE_TABLES = ['projects', 'milestones', 'updates', 'comments', 'contact_messages', 'profiles'] as const;
 
 function check<T>(res: { data: T; error: { message: string; code?: string } | null }): T {
   if (res.error) {
@@ -170,6 +172,31 @@ export function createSupabaseStore(sb: SupabaseClient): StudioApi {
 
     async setRole(_viewer, userId, role) {
       check(await sb.from('profiles').update({ role }).eq('id', userId));
+    },
+
+    async setApproval(_viewer, userId, status) {
+      // A plain update: the profiles_update policy lets only an admin reach other
+      // rows, and the protect_profile_fields trigger rejects approval changes by
+      // anyone else and stamps approved_at / approved_by itself.
+      const rows = check(await sb.from('profiles').update({ approval_status: status }).eq('id', userId).select('id'));
+      if (!rows || rows.length !== 1) throw new ApiError('forbidden', 'Could not update this account');
+    },
+
+    async getMyProfile(userId) {
+      const row = check(await sb.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).maybeSingle());
+      return (row ?? null) as Profile | null;
+    },
+
+    watchProfile(userId, onChange) {
+      // Own row only (RLS would not deliver anyone else's anyway).
+      const channel = sb.channel(`studio-profile-${userId}-${Math.random().toString(36).slice(2)}`);
+      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, () =>
+        onChange(),
+      );
+      channel.subscribe();
+      return () => {
+        void sb.removeChannel(channel);
+      };
     },
 
     subscribe(onChange) {
