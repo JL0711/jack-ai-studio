@@ -1,22 +1,28 @@
 // In-memory store used when no Supabase settings are configured.
 // It enforces the same rules as the database's Row Level Security, using the
 // helpers in lib/permissions.ts, so the demo behaves like the real thing.
+// Like the database, it takes the caller's role and approval from their
+// stored profile row, never from what the caller claims.
 
 import {
+  buildViewer,
   canApproveMilestone,
   canComment,
   canEditProjects,
   canManageUsers,
+  canReviewAccounts,
   canSeeInbox,
   canViewProject,
   clampProgress,
+  isApprovalStatus,
+  isApproved,
   isRole,
   isSignedIn,
   normalizeEmail,
   redactProject,
   visibleUpdates,
 } from '../lib/permissions';
-import type { Comment, ContactInput, Milestone, Project, Viewer } from '../lib/types';
+import type { Comment, ContactInput, Milestone, Profile, Project, Viewer } from '../lib/types';
 import { LIMITS, checkLength, cleanContact, validateContact } from '../lib/validation';
 import { ApiError, type StudioApi } from './api';
 import { buildDemoSeed, type DemoSeed } from './demoData';
@@ -29,6 +35,11 @@ const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(count
 export interface DemoStore extends StudioApi {
   /** Deep copy of the current data (for tests). */
   snapshot(): DemoSeed;
+  /**
+   * Demo stand-in for Supabase sign-up with "Confirm email" off: creates a
+   * pending client profile and returns its id. Throws if the email is taken.
+   */
+  signUp(email: string, displayName: string): string;
 }
 
 export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => Date = () => new Date()): DemoStore {
@@ -37,6 +48,13 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
 
   const nowIso = () => clock().toISOString();
   const notify = () => listeners.forEach((fn) => fn());
+
+  /** The caller as the database sees them: role and approval from their own profile row. */
+  const resolve = (viewer: Viewer): Viewer => {
+    if (!isSignedIn(viewer)) return viewer;
+    const me = db.profiles.find((p) => p.id === viewer.userId) ?? null;
+    return buildViewer({ userId: viewer.userId as string, email: viewer.email, displayName: viewer.displayName }, me);
+  };
 
   const requireSignedIn = (viewer: Viewer) => {
     if (!isSignedIn(viewer)) throw new ApiError('forbidden', 'Not signed in');
@@ -65,6 +83,7 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     mode: 'demo',
 
     async listProjects(viewer) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       return visibleProjects(viewer)
         .map((p) => redactProject(viewer.role, clone(p)))
@@ -72,6 +91,7 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async getProjectBundle(viewer, id) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       const project = db.projects.find((p) => p.id === id);
       if (!project || !canViewProject(viewer, project)) return null;
@@ -84,12 +104,14 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async listMilestones(viewer) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       const ids = visibleProjectIds(viewer);
       return clone(db.milestones.filter((m) => ids.has(m.project_id))).sort(sortMilestones);
     },
 
     async listRecentUpdates(viewer, limit) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       const ids = visibleProjectIds(viewer);
       return visibleUpdates(viewer.role, clone(db.updates.filter((u) => ids.has(u.project_id))))
@@ -98,12 +120,14 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async listRecentComments(viewer, limit) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       const ids = visibleProjectIds(viewer);
       return clone(db.comments.filter((c) => ids.has(c.project_id))).sort(byNewest).slice(0, limit);
     },
 
     async createProject(viewer, input) {
+      viewer = resolve(viewer);
       requireAdmin(viewer);
       ensureLength(input.title, LIMITS.projectTitle);
       const ts = nowIso();
@@ -125,6 +149,7 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async updateProject(viewer, id, patch) {
+      viewer = resolve(viewer);
       requireAdmin(viewer);
       const p = findProject(id);
       if (patch.title !== undefined) {
@@ -142,6 +167,7 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async saveMilestone(viewer, input) {
+      viewer = resolve(viewer);
       requireAdmin(viewer);
       findProject(input.project_id);
       ensureLength(input.title, LIMITS.milestoneTitle);
@@ -172,6 +198,7 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async deleteMilestone(viewer, id) {
+      viewer = resolve(viewer);
       requireAdmin(viewer);
       const m = db.milestones.find((x) => x.id === id);
       if (!m) throw new ApiError('not_found', 'Milestone not found');
@@ -181,10 +208,12 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async approveMilestone(viewer, id) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       const m = db.milestones.find((x) => x.id === id);
       if (!m) throw new ApiError('not_found', 'Milestone not found');
       const p = findProject(m.project_id);
+      if (!isApproved(viewer)) throw new ApiError('forbidden', 'Your account has not been approved yet');
       if (!canApproveMilestone(viewer, p, { status: 'pending_approval' })) {
         throw new ApiError('forbidden', 'Only the project’s client can approve');
       }
@@ -197,6 +226,7 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async postUpdate(viewer, projectId, body, visibility) {
+      viewer = resolve(viewer);
       requireAdmin(viewer);
       findProject(projectId);
       ensureLength(body, LIMITS.update);
@@ -213,12 +243,14 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async deleteUpdate(viewer, id) {
+      viewer = resolve(viewer);
       requireAdmin(viewer);
       db.updates = db.updates.filter((u) => u.id !== id);
       notify();
     },
 
     async postComment(viewer, projectId, body) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       const p = findProject(projectId);
       if (!canComment(viewer, p)) throw new ApiError('forbidden', 'Cannot comment on this project');
@@ -244,12 +276,14 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async listContactMessages(viewer) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       if (!canSeeInbox(viewer.role)) throw new ApiError('forbidden', 'Admin only');
       return clone(db.messages).sort(byNewest);
     },
 
     async setMessageHandled(viewer, id, handled) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       if (!canSeeInbox(viewer.role)) throw new ApiError('forbidden', 'Admin only');
       const msg = db.messages.find((m) => m.id === id);
@@ -259,12 +293,14 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
     },
 
     async listProfiles(viewer) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       if (!canManageUsers(viewer.role)) throw new ApiError('forbidden', 'Admin only');
       return clone(db.profiles).sort((a, b) => a.created_at.localeCompare(b.created_at));
     },
 
     async setRole(viewer, userId, role) {
+      viewer = resolve(viewer);
       requireSignedIn(viewer);
       // Same rule as the database trigger: only an admin may change a role.
       if (!canManageUsers(viewer.role)) throw new ApiError('forbidden', 'Only an admin can change roles');
@@ -273,6 +309,66 @@ export function createDemoStore(seed: DemoSeed = buildDemoSeed(), clock: () => D
       if (!profile) throw new ApiError('not_found', 'User not found');
       profile.role = role;
       notify();
+    },
+
+    async setApproval(viewer, userId, status) {
+      viewer = resolve(viewer);
+      requireSignedIn(viewer);
+      // Same rule as the database trigger: only an admin may change approval.
+      if (!canReviewAccounts(viewer.role)) throw new ApiError('forbidden', 'Only an admin can change approval status');
+      if (!isApprovalStatus(status)) throw new ApiError('invalid', 'Unknown approval status');
+      const profile = db.profiles.find((p) => p.id === userId);
+      if (!profile) throw new ApiError('not_found', 'User not found');
+      if (profile.approval_status !== status) {
+        // Stamped here, like the trigger does: approved → who and when; otherwise cleared.
+        profile.approval_status = status;
+        profile.approved_at = status === 'approved' ? nowIso() : null;
+        profile.approved_by = status === 'approved' ? viewer.userId : null;
+      }
+      notify();
+    },
+
+    async getMyProfile(userId) {
+      const me = db.profiles.find((p) => p.id === userId);
+      return me ? clone(me) : null;
+    },
+
+    watchProfile(userId, onChange) {
+      // Like a realtime subscription filtered to id = userId: fires only when that row changes.
+      const read = () => JSON.stringify(db.profiles.find((p) => p.id === userId) ?? null);
+      let last = read();
+      const fn = () => {
+        const next = read();
+        if (next !== last) {
+          last = next;
+          onChange();
+        }
+      };
+      listeners.add(fn);
+      return () => {
+        listeners.delete(fn);
+      };
+    },
+
+    signUp(email, displayName) {
+      const clean = normalizeEmail(email);
+      if (!clean) throw new ApiError('invalid', 'Email is required');
+      if (db.profiles.some((p) => normalizeEmail(p.email) === clean)) {
+        throw new ApiError('invalid', 'User already registered');
+      }
+      const profile: Profile = {
+        id: newId('demo-user'),
+        email: clean,
+        display_name: displayName.trim().slice(0, LIMITS.displayName.max) || null,
+        role: 'client',
+        approval_status: 'pending',
+        approved_at: null,
+        approved_by: null,
+        created_at: nowIso(),
+      };
+      db.profiles.push(profile);
+      notify();
+      return profile.id;
     },
 
     subscribe(onChange) {

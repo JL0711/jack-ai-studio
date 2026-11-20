@@ -1,14 +1,19 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
+import { LoadState } from '../../components/DashboardParts';
 import { useI18n } from '../../i18n/I18nProvider';
-import { canManageUsers, canSeeInbox, canUseDashboard } from '../../lib/permissions';
+import { canManageUsers, canSeeInbox, canUseDashboard, countPending, isAwaitingApproval } from '../../lib/permissions';
+import type { Viewer } from '../../lib/types';
+import { getApi } from '../../store';
+import { useLiveData } from '../../store/useLiveData';
+import AwaitingApproval from './AwaitingApproval';
 
 /** Guards every /dashboard route and shows the admin sub-navigation. */
 export default function DashboardLayout() {
   const { t } = useI18n();
-  const { viewer, ready, demo } = useAuth();
+  const { viewer, ready, demo, profileReady, profileError, refreshProfile } = useAuth();
 
-  if (!ready) {
+  if (!ready || (canUseDashboard(viewer.role) && !profileReady)) {
     return (
       <div className="page">
         <div className="container">
@@ -37,6 +42,21 @@ export default function DashboardLayout() {
     );
   }
 
+  // Could not read our own profile row: we don't know whether the account is
+  // approved, so show nothing but a retry.
+  if (profileError) {
+    return (
+      <div className="page">
+        <div className="container narrow">
+          <LoadState loading={false} error={profileError} onRetry={refreshProfile} />
+        </div>
+      </div>
+    );
+  }
+
+  // The approval gate: pending or rejected accounts never render (or query) the dashboard.
+  if (isAwaitingApproval(viewer)) return <AwaitingApproval />;
+
   const showAdminNav = canSeeInbox(viewer.role) || canManageUsers(viewer.role);
 
   return (
@@ -48,11 +68,30 @@ export default function DashboardLayout() {
               {t('admin.projects')}
             </NavLink>
             <NavLink to="/dashboard/inbox">{t('nav.inbox')}</NavLink>
-            <NavLink to="/dashboard/users">{t('nav.users')}</NavLink>
+            <UsersNavLink viewer={viewer} />
           </nav>
         )}
         <Outlet />
       </div>
     </div>
+  );
+}
+
+/** 用户 link with a live count of accounts waiting for approval (realtime on profiles + refresh on focus). */
+function UsersNavLink({ viewer }: { viewer: Viewer }) {
+  const { t } = useI18n();
+  const api = getApi();
+  const { data } = useLiveData(() => api.listProfiles(viewer), [viewer.userId, viewer.role]);
+  const pending = data ? countPending(data) : 0;
+  return (
+    <NavLink to="/dashboard/users">
+      {t('nav.users')}
+      {pending > 0 && (
+        <span className="count-pill" data-testid="pending-count">
+          <span aria-hidden="true">{pending}</span>
+          <span className="visually-hidden">{t('nav.pendingCount', { n: pending })}</span>
+        </span>
+      )}
+    </NavLink>
   );
 }

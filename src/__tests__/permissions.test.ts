@@ -19,7 +19,7 @@ import {
   upcomingMilestones,
   visibleUpdates,
 } from '../lib/permissions';
-import type { Project, Viewer } from '../lib/types';
+import type { ApprovalStatus, Project, Viewer } from '../lib/types';
 import { VISITOR } from '../lib/types';
 
 const project = (over: Partial<Project> = {}): Project => ({
@@ -36,11 +36,12 @@ const project = (over: Partial<Project> = {}): Project => ({
   ...over,
 });
 
-const v = (role: Viewer['role'], email: string | null = null): Viewer => ({
+const v = (role: Viewer['role'], email: string | null = null, approval: ApprovalStatus = 'approved'): Viewer => ({
   role,
   userId: role === 'visitor' ? null : `u-${role}`,
   email,
   displayName: null,
+  approval,
 });
 
 describe('role capabilities', () => {

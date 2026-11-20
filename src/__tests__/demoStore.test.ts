@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ContactInput, Viewer } from '../lib/types';
 import { VISITOR } from '../lib/types';
-import { DEMO_VIEWERS, buildDemoSeed } from '../store/demoData';
+import { DEMO_IDS, DEMO_VIEWERS, buildDemoSeed } from '../store/demoData';
 import { createDemoStore, type DemoStore } from '../store/demoStore';
 
 const NOW = new Date(2026, 10, 19, 12, 0);
 const client = DEMO_VIEWERS.client;
 const admin = DEMO_VIEWERS.admin;
 const family = DEMO_VIEWERS.family;
-const stranger: Viewer = { role: 'client', userId: 'u-x', email: 'nobody@example.com', displayName: null };
+// Approved client with no linked project.
+const newUser: Viewer = { role: 'client', userId: DEMO_IDS.newUser, email: 'new@example.com', displayName: null, approval: 'approved' };
+// No profile row at all: treated as a pending client, like the database does.
+const stranger: Viewer = { role: 'client', userId: 'u-x', email: 'nobody@example.com', displayName: null, approval: 'approved' };
 
 let store: DemoStore;
 beforeEach(() => {
@@ -35,7 +38,7 @@ describe('demo store: reading', () => {
 
   it('family sees every project and internal updates, but no client emails', async () => {
     const list = await store.listProjects(family);
-    expect(list).toHaveLength(4);
+    expect(list).toHaveLength(5);
     expect(list.every((p) => !('client_email' in p))).toBe(true);
     const recent = await store.listRecentUpdates(family, 50);
     expect(recent.some((u) => u.visibility === 'internal')).toBe(true);
@@ -47,6 +50,7 @@ describe('demo store: reading', () => {
   });
 
   it('a client with no linked projects gets an empty list', async () => {
+    expect(await store.listProjects(newUser)).toEqual([]);
     expect(await store.listProjects(stranger)).toEqual([]);
   });
 

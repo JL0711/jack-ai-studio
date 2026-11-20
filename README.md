@@ -5,14 +5,15 @@
 - **首页**：工作室介绍、服务、合作方式、回复时间
 - **展览馆**：做过的项目卡片（已上线 / 开发中 / 演示），可点开看详情
 - **联系**：表单留言（写入 Supabase 的 `contact_messages`），网站上不公开任何邮箱或电话
-- **登录 / 注册**：邮箱 + 密码（Supabase Auth），含注册确认邮件、找回密码
+- **登录 / 注册**：邮箱 + 密码（Supabase Auth），找回密码
+- **管理员审核开通**（代替邮箱确认）：新注册的账号一律是「待审核」，只能看到一个等待页（中英文，Jack 通过后自动进入，不用刷新）；Jack 在 **我的项目 → 用户** 页面核实身份后点「通过」，对方才能看到任何项目
 - **我的项目（Dashboard）**，按角色显示：
-  - **客户 client**（新注册默认）：只看到关联到自己邮箱的项目：进度、阶段、里程碑、项目动态；可以「确认验收」待验收的里程碑、给项目留言
-  - **管理员 admin**（Jack）：建项目、改进度和里程碑、发动态（客户可见 / 内部）、看留言、看联系消息收件箱、设置用户角色
+  - **客户 client**（新注册默认）：审核通过后，只看到关联到自己邮箱的项目：进度、阶段、里程碑、项目动态；可以「确认验收」待验收的里程碑、给项目留言
+  - **管理员 admin**（Jack）：建项目、改进度和里程碑、发动态（客户可见 / 内部）、看留言、看联系消息收件箱、审核新账号（导航上显示待审核数量）、设置用户角色
   - **家人 family**（只读）：所有项目的进度、未来 14 天的截止日期、最新动态（包括内部动态）；看不到收件箱和客户邮箱
 - 进度、动态、留言通过 Supabase Realtime 实时刷新；切回浏览器标签页时也会刷新
 
-没有配置 Supabase 时，网站自动进入 **演示模式**：使用内置示例数据（只存在内存里，刷新就重置），页面顶部有「演示模式 / Demo mode」横幅和身份切换器（访客 / 客户 / 管理员 / 家人），可以点开每个页面看效果。
+没有配置 Supabase 时，网站自动进入 **演示模式**：使用内置示例数据（只存在内存里，刷新就重置），页面顶部有「演示模式 / Demo mode」横幅和身份切换器（访客 / 客户 / 待审核用户 / 管理员 / 家人），可以点开每个页面看效果。在演示模式里注册会创建一个待审核账号，切到「管理员」在「用户」页审核，再切回「待审核用户」就能看到审核前后的区别。
 
 ---
 
@@ -26,9 +27,13 @@ studio-site/
 ├─ .github/workflows/deploy.yml  推送到 main 自动部署到 GitHub Pages
 ├─ public/portfolio/            展览馆截图
 ├─ supabase/
-│  ├─ schema.sql                在 Supabase SQL Editor 里运行的完整数据库脚本
+│  ├─ schema.sql                在 Supabase SQL Editor 里运行的完整数据库脚本（新项目用这个）
+│  ├─ migrations/
+│  │  └─ 002_admin_approval.sql 已上线的项目升级用：加上「管理员审核开通」
 │  ├─ test_rls.py               在本地真实 Postgres 上测试权限规则
-│  └─ test/supabase_stub.sql    测试用的 auth 模拟（不要在 Supabase 上运行）
+│  └─ test/                     测试用文件（都不要在 Supabase 上运行）
+│     ├─ supabase_stub.sql      auth 模拟
+│     └─ schema_before_approval.sql  加审核之前的旧 schema，用来测试升级
 └─ src/
    ├─ data/projects.ts          ← 展览馆项目（改这里）
    ├─ i18n/strings.ts           ← 所有界面文字（中文 + 英文）
@@ -70,12 +75,13 @@ npm run build      # 类型检查 + 打包到 dist/
 
 1. **新建项目**：登录 [supabase.com](https://supabase.com) → New project。记下数据库密码（网站用不到，但以后管理要用）。
 2. **建表和权限**：左侧 **SQL Editor** → New query → 把 `supabase/schema.sql` 全部内容粘进去 → **Run**。这个脚本可以重复运行。
+   - **已经上线、运行过旧版 schema.sql 的项目**：改为运行 `supabase/migrations/002_admin_approval.sql`（可以重复运行，不会删改已有数据；已有的管理员和家人自动设为「已通过」，已有的客户变成「待审核」，需要在「用户」页面通过一次）。
 3. **登录跳转地址**：左侧 **Authentication → URL Configuration**
    - **Site URL** 填你的 Pages 地址，例如 `https://你的用户名.github.io/仓库名/`（结尾带 `/`）
    - **Redirect URLs** 添加 `https://你的用户名.github.io/仓库名/**`；本地调试再加 `http://localhost:5173/**`
    - 注册确认和重置密码的邮件链接会跳回这个地址（网站用的是 HashRouter，所以跳回的是根地址，不带 `#/...`）
-4. **保持「确认邮箱」开启**：**Authentication → Sign In / Providers → Email** 里的 *Confirm email* 必须是开启的（默认开启）。项目是按邮箱关联客户的，关掉它别人就能用客户的邮箱注册并看到项目。
-5. **邮件发送（重要）**：Supabase 自带的邮件服务限制很严（目前只给项目团队成员发信，而且每小时只有几封）。正式给客户用之前，请到 **Authentication → Emails → SMTP Settings** 配置你自己的 SMTP 服务。邮件模板也可以在 **Emails → Templates** 改成中文。
+4. **关闭「确认邮箱」**（第 2 步的数据库脚本运行之后再关）：**Authentication → Sign In / Providers → Email** 里关掉 *Confirm email*。关掉后注册会直接登录，但账号是「待审核」，什么项目都看不到，直到你在网站上审核通过。**审核就是新的安全关口**：项目按邮箱关联客户，任何人都能用客户的邮箱注册，所以点「通过」之前一定要核实对方身份（比如在微信上确认这个邮箱是他本人的）。如果有人抢先用客户的邮箱注册了：拒绝它，再到 **Authentication → Users** 删除这个用户，真正的客户才能用这个邮箱注册。
+5. **邮件发送**：Supabase 自带的邮件服务限制很严（目前只给项目团队成员发信，而且每小时只有几封）。关掉确认邮箱后，注册不再需要邮件，但「忘记密码」仍然要发邮件；想让客户自己重置密码，需要到 **Authentication → Emails → SMTP Settings** 配置你自己的 SMTP 服务。邮件模板也可以在 **Emails → Templates** 改成中文。
 6. **复制两个值**：
    - **Project URL**：Project Settings → Data API（或项目首页的 *Connect* 按钮）
    - **Publishable key**：Project Settings → **API Keys** → Publishable key（`sb_publishable_...`）
@@ -92,7 +98,7 @@ npm run build      # 类型检查 + 打包到 dist/
 
 ## 设置管理员（自己）和家人
 
-1. 先在网站上用自己的邮箱 **注册** 并点开确认邮件。
+1. 先在网站上用自己的邮箱 **注册**（会看到等待审核页，正常）。
 2. 到 Supabase **SQL Editor** 运行（换成真实邮箱）：
 
 ```sql
@@ -100,18 +106,20 @@ npm run build      # 类型检查 + 打包到 dist/
 update public.profiles set role = 'admin' where email = lower('你的邮箱');
 ```
 
-3. 家人也先在网站上注册并确认邮箱，然后：
+   管理员始终算「已通过」，不会被审核状态锁在外面。
+
+3. 家人也先在网站上注册，然后在网站 **我的项目 → 用户** 页面点「通过」，再把角色改成「家人」；或者在 SQL Editor 里：
 
 ```sql
--- 设为家人（只读）
-update public.profiles set role = 'family' where email = lower('家人的邮箱');
+-- 设为家人（只读）并通过审核
+update public.profiles set role = 'family', approval_status = 'approved' where email = lower('家人的邮箱');
 ```
 
-成为管理员之后，也可以直接在网站 **我的项目 → 用户** 页面改角色。角色变更由数据库触发器保护：只有管理员（或 SQL Editor）能改，任何人都改不了自己的角色。改完让对方刷新一下页面。
+成为管理员之后，审核和改角色都在网站 **我的项目 → 用户** 页面完成：最上面是「待审核」列表（通过 / 拒绝），被拒绝的账号单独列出，可以「恢复」为待审核；已开通的账号可以改角色或「撤销开通」。导航上的数字是待审核账号数，有人注册时实时更新。角色和审核状态都由数据库触发器保护：只有管理员（或 SQL Editor）能改，任何人都改不了自己的。SQL Editor 里的审核命令在 `schema.sql` 最后（第 8 节）。
 
 ### 给客户开项目
 
-管理员在 **我的项目 → 新建项目** 里填「客户邮箱」。客户用 **同一个邮箱** 注册并确认后，就能看到这个项目（邮箱大小写不影响）。
+管理员在 **我的项目 → 新建项目** 里填「客户邮箱」。客户用 **同一个邮箱** 注册、你核实身份并点「通过」后，就能看到这个项目（邮箱大小写不影响）。客户如果之后修改了登录邮箱，账号会自动回到「待审核」，需要你重新通过。
 
 ---
 
@@ -133,12 +141,14 @@ update public.profiles set role = 'family' where email = lower('家人的邮箱'
 
 ## 测试数据库权限（可选）
 
-`supabase/test_rls.py` 会在本机启动一个真实的 Postgres（通过 `pgserver` 包，不需要单独安装），模拟 Supabase 的 `auth` 部分，加载 `schema.sql` 两次，然后以不同身份检查约 100 条规则（客户看不到别人的项目和内部动态、不能改自己的角色和进度、家人只读且看不到收件箱和客户邮箱、访客只能提交联系表单、确认验收只能由项目客户在「待验收」状态下进行，等等）。
+`supabase/test_rls.py` 会在本机启动一个真实的 Postgres（通过 `pgserver` 包，不需要单独安装），模拟 Supabase 的 `auth` 部分，然后分三种情况测试：全新安装（`schema.sql` 跑两次 + 升级脚本跑两次）、从旧 schema 升级（旧 schema + 升级脚本跑两次）、带已有数据的线上升级。前两种各以不同身份检查约 210 条规则（待审核 / 被拒绝的账号什么都看不到、不能自己通过审核、客户看不到别人的项目和内部动态、不能改自己的角色和进度、家人只读且看不到收件箱和客户邮箱、访客只能提交联系表单、确认验收只能由项目客户在「待验收」状态下进行，等等），并检查全新安装和升级后的数据库结构完全一致。
 
 ```bash
-python3 -m venv .venv-rls
+python3 -m venv .venv-rls        # pgserver 只支持 Python 3.9–3.12
 .venv-rls/bin/pip install pgserver "psycopg[binary]"
 .venv-rls/bin/python supabase/test_rls.py
+# 反向验证：故意放宽一条规则，测试必须失败
+.venv-rls/bin/python supabase/test_rls.py --weaken client-read
 ```
 
 ⚠ 不要用 `--dsn` 指向你的 Supabase 正式数据库，这个脚本会建库和写测试数据。
@@ -152,8 +162,9 @@ python3 -m venv .venv-rls
 - **客户邮箱对家人隐藏**：RLS 只能按「行」过滤，不能隐藏某一列。所以 `projects.client_email` 用的是列级权限：API 角色可以读 `projects` 的其他所有列，但不能读 `client_email`。管理员通过 `admin_projects()` 函数读取（函数里先检查是不是管理员）。以后给 `projects` 加新列时，记得再运行一次 `grant select (新列名) on public.projects to authenticated;`。
 - **确认验收** 用的是一个专门的数据库函数 `approve_milestone()`：只允许项目自己的客户、只在「待验收」状态、只改状态和验收人/时间，客户没有任何直接修改里程碑的权限。
 - **角色**：新注册一律是客户（注册时传什么角色都会被忽略）；改角色由触发器拦截，只有管理员能改。
+- **审核开通（代替邮箱确认）**：新注册一律是「待审核」，只能读到自己的那一行 `profiles`。所有客户和家人的读写（项目、里程碑、动态、留言、确认验收）都要求 `is_approved()`；管理员始终算已通过。`approval_status` / `approved_at` / `approved_by` 由触发器保护，只有管理员能改，通过时间和通过人由触发器自动记录、无法伪造。修改登录邮箱会让账号回到「待审核」（关掉确认邮箱后，Supabase 会立即生效邮箱修改）。
 - **联系表单**：未登录访客只能「插入」，不能读取；数据库里有长度和取值检查。表单有一个隐藏的蜜罐字段过滤简单的机器人，但无法阻止有人直接调用 API 刷消息。如果以后遇到垃圾消息，可以在 Supabase 里开启 CAPTCHA 或加限流。
-- **确认邮箱必须开启**（见上面第 4 步）。
+- **确认邮箱可以关闭，但前提是先运行了审核脚本**（见上面第 2、4 步）。旧版数据库没有审核关口，关掉确认邮箱等于任何人都能看到客户项目。
 - Supabase 免费项目长时间没人访问会被暂停，到控制台点一下即可恢复。
 
 ---

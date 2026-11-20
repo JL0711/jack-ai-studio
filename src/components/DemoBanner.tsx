@@ -1,11 +1,9 @@
 import { useAuth } from '../auth/AuthProvider';
 import { useI18n } from '../i18n/I18nProvider';
-import type { ViewerRole } from '../lib/types';
-
-const ROLE_OPTIONS: ViewerRole[] = ['visitor', 'client', 'admin', 'family'];
+import { DEMO_IDENTITIES, type DemoIdentity } from '../store/demoData';
 
 export function DemoBanner() {
-  const { demo, viewer, setDemoRole } = useAuth();
+  const { demo, demoIdentity, setDemoIdentity } = useAuth();
   const { t } = useI18n();
   if (!demo) return null;
   return (
@@ -16,11 +14,11 @@ export function DemoBanner() {
         <label>
           {t('demo.viewAs')}
           <select
-            value={viewer.role}
-            onChange={(e) => setDemoRole(e.target.value as ViewerRole)}
+            value={demoIdentity}
+            onChange={(e) => setDemoIdentity(e.target.value as DemoIdentity)}
             data-testid="demo-role"
           >
-            {ROLE_OPTIONS.map((r) => (
+            {DEMO_IDENTITIES.map((r) => (
               <option key={r} value={r}>
                 {t(`role.${r}`)}
               </option>
