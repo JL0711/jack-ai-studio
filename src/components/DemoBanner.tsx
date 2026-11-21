@@ -9,7 +9,7 @@ export function DemoBanner() {
   return (
     <div className="demo-banner" role="region" aria-label={t('demo.title')}>
       <div className="container">
-        <strong>演示模式 / Demo mode</strong>
+        <strong>{t('demo.title')}</strong>
         <span className="demo-text">{t('demo.banner')}</span>
         <label>
           {t('demo.viewAs')}

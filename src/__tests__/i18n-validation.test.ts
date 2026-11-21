@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SHOWCASE_PROJECTS } from '../data/projects';
-import { STRINGS, detectLang, translate } from '../i18n/strings';
+import { STRINGS, detectLang, langFromUrl, translate } from '../i18n/strings';
 import { readSupabaseConfig } from '../lib/config';
 import { BUDGETS, PROJECT_TYPES, charLength, validateContact } from '../lib/validation';
 
@@ -72,5 +72,27 @@ describe('Supabase config', () => {
   it('rejects a non-https URL', () => {
     expect(readSupabaseConfig({ VITE_SUPABASE_URL: 'http://x.supabase.co', VITE_SUPABASE_PUBLISHABLE_KEY: 'k' })).toBeNull();
     expect(readSupabaseConfig({ VITE_SUPABASE_URL: 'not a url', VITE_SUPABASE_PUBLISHABLE_KEY: 'k' })).toBeNull();
+  });
+});
+
+describe('language links and images', () => {
+  it('reads ?lang= from either side of the #', () => {
+    expect(langFromUrl('?lang=en', '#/showcase')).toBe('en');
+    expect(langFromUrl('', '#/showcase/excel-certificates?lang=zh')).toBe('zh');
+    expect(langFromUrl('?lang=EN', '')).toBe('en');
+    expect(langFromUrl('?lang=fr', '#/')).toBeNull();
+    expect(langFromUrl('', '#access_token=abc&type=recovery')).toBeNull();
+  });
+
+  it('every showcase image has a Chinese and an English file in public/portfolio', () => {
+    const files = new Set(
+      Object.keys(import.meta.glob('/public/portfolio/*.png')).map((k) => k.replace('/public/', '')),
+    );
+    for (const p of SHOWCASE_PROJECTS) {
+      for (const img of p.images ?? []) {
+        expect(img.src.zh).not.toBe(img.src.en);
+        for (const lang of ['zh', 'en'] as const) expect(files, `${p.slug} ${lang}`).toContain(img.src[lang]);
+      }
+    }
   });
 });

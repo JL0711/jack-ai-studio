@@ -20,8 +20,7 @@ const zh = {
   'nav.users': '用户',
   'nav.pendingCount': '{n} 个账号待审核',
   'nav.skip': '跳到正文',
-  'lang.switch': 'EN',
-  'lang.switchLabel': 'Switch to English',
+  'lang.choose': '语言 / Language',
   'theme.label': '主题',
   'theme.auto': '跟随系统',
   'theme.light': '浅色',
@@ -47,6 +46,7 @@ const zh = {
 
   // home
   'home.eyebrow': '独立开发者 · 美国加州',
+  'home.heroSub': 'Jack 本地 AI 工作室',
   'home.pitch':
     '我是 Jack，一名独立开发者，做 AI 工具、本地私有化 AI 部署、Web 应用和自动化。中英双语沟通。本地模型运行在一台 RTX 5070 Ti 工作站上，需要保密的资料可以不经过云端 API 处理。',
   'home.ctaShowcase': '看作品',
@@ -341,6 +341,7 @@ const zh = {
   'common.loading': '加载中…',
   'common.error': '出错了：{msg}',
   'common.required': '必填',
+  'common.yes': '确定',
   'common.colon': '：',
 } as const;
 
@@ -348,7 +349,7 @@ export type StringKey = keyof typeof zh;
 
 const en: Record<StringKey, string> = {
   'brand.name': 'Jack AI Studio',
-  'brand.full': 'Jack AI Studio · Jack 本地 AI 工作室',
+  'brand.full': 'Jack AI Studio · Local AI, built by Jack',
   'brand.location': 'California, USA',
   'nav.home': 'Home',
   'nav.showcase': 'Showcase',
@@ -361,8 +362,7 @@ const en: Record<StringKey, string> = {
   'nav.users': 'Users',
   'nav.pendingCount': '{n} waiting for approval',
   'nav.skip': 'Skip to content',
-  'lang.switch': '中',
-  'lang.switchLabel': '切换到中文',
+  'lang.choose': 'Language / 语言',
   'theme.label': 'Theme',
   'theme.auto': 'Auto',
   'theme.light': 'Light',
@@ -385,6 +385,7 @@ const en: Record<StringKey, string> = {
   'footer.built': 'Built with Vite, React and Supabase',
 
   'home.eyebrow': 'Independent developer · California, USA',
+  'home.heroSub': 'Local AI, built by Jack',
   'home.pitch':
     'I’m Jack, an independent developer building AI tools, local/private AI deployments, web apps and automation. I work in Chinese and English. My local models run on an RTX 5070 Ti workstation, so sensitive documents can be processed without a cloud API.',
   'home.ctaShowcase': 'See my work',
@@ -671,6 +672,7 @@ const en: Record<StringKey, string> = {
   'common.loading': 'Loading…',
   'common.error': 'Something went wrong: {msg}',
   'common.required': 'Required',
+  'common.yes': 'Yes',
   'common.colon': ': ',
 };
 
@@ -688,4 +690,18 @@ export function translate(lang: Lang, key: StringKey, params?: Record<string, st
 export function detectLang(languages: readonly string[] | undefined): Lang {
   const first = (languages ?? []).find(Boolean) ?? '';
   return first.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+
+/**
+ * Language asked for in the link itself: ?lang=en or ?lang=zh, either before
+ * the # (…/jack-ai-studio/?lang=en#/showcase) or after it (…#/showcase?lang=en).
+ * Lets Jack send English-speaking clients a link that opens in English.
+ */
+export function langFromUrl(search: string, hash: string): Lang | null {
+  const hashQuery = hash.includes('?') ? hash.slice(hash.indexOf('?')) : '';
+  for (const q of [search, hashQuery]) {
+    const v = new URLSearchParams(q).get('lang')?.trim().toLowerCase();
+    if (v === 'zh' || v === 'en') return v;
+  }
+  return null;
 }

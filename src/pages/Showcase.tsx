@@ -11,7 +11,7 @@ function Thumb({ project }: { project: ShowcaseProject }) {
   if (image) {
     return (
       <div className="thumb">
-        <img src={assetUrl(image.src)} alt={pick(image.alt)} loading="lazy" width={1600} height={1200} />
+        <img src={assetUrl(pick(image.src))} alt={pick(image.alt)} loading="lazy" width={1600} height={1200} />
       </div>
     );
   }

@@ -127,6 +127,47 @@
 .icon-btn:hover {
   border-color: var(--border-strong);
 }
+.lang-switch {
+  display: inline-flex;
+  height: 34px;
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.lang-switch button {
+  font: inherit;
+  font-size: 0.85rem;
+  min-width: 42px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.lang-switch button:hover {
+  color: var(--text);
+}
+.lang-switch button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(20, 24, 28, 0.12);
+}
+@media (max-width: 480px) {
+  /* Keep logo and tools on one line down to 360px-wide phones. */
+  .header-tools {
+    gap: 6px;
+  }
+  .header-tools .icon-btn {
+    padding: 0 8px;
+  }
+  .lang-switch button {
+    min-width: 0;
+    padding: 0 7px;
+  }
+}
 .theme-select {
   font: inherit;
   font-size: 0.875rem;

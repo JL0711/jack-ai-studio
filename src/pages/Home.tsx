@@ -24,7 +24,7 @@ export default function Home() {
           <span className="eyebrow">{t('home.eyebrow')}</span>
           <h1>
             Jack AI Studio
-            <span className="hero-sub">Jack 本地 AI 工作室</span>
+            <span className="hero-sub">{t('home.heroSub')}</span>
           </h1>
           <p className="pitch">{t('home.pitch')}</p>
           <div className="hero-actions">

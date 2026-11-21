@@ -57,7 +57,7 @@ export function ConfirmButton({
   className?: string;
   confirmClassName?: string;
 }) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -91,7 +91,7 @@ export function ConfirmButton({
             }
           }}
         >
-          {busy ? t('auth.working') : lang === 'zh' ? '确定' : 'Yes'}
+          {busy ? t('auth.working') : t('common.yes')}
         </button>
         <button type="button" className="btn btn-ghost btn-small" onClick={() => setAsking(false)}>
           {t('admin.cancel')}

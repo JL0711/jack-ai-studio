@@ -26,7 +26,7 @@ const FIELD_LIMITS: Partial<Record<ContactField, { min: number; max: number }>> 
 };
 
 export default function Contact() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const { demo } = useAuth();
   const [form, setForm] = useState<ContactInput>(EMPTY);
   const [honeypot, setHoneypot] = useState('');
@@ -79,7 +79,7 @@ export default function Contact() {
           <section className="card">
             {demo && (
               <p className="notice notice-demo" role="note" style={{ marginTop: 0 }}>
-                {lang === 'zh' ? t('contact.demoNotice') : `演示模式，消息不会发送 · ${t('contact.demoNotice')}`}
+                {t('contact.demoNotice')}
               </p>
             )}
 

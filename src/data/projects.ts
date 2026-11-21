@@ -3,9 +3,11 @@
 //
 //  - Every text field has a Chinese (zh) and an English (en) version.
 //  - status: 'live' = 已上线, 'in_progress' = 开发中, 'demo' = 演示
-//  - images: put the file in public/portfolio/ and reference it as
-//    'portfolio/<file>.png' (no leading slash). Only use screenshots that
-//    show no real person's name, email or photo.
+//  - images: put both language versions in public/portfolio/ as
+//    <name>-zh.png and <name>-en.png, and reference them as
+//    src: { zh: 'portfolio/<name>-zh.png', en: 'portfolio/<name>-en.png' }
+//    (no leading slash). Visitors see the one that matches the site language.
+//    Only use screenshots that show no real person's name, email or photo.
 //  - Order in this list = order on the page.
 //  - Only write facts that are true. No invented numbers or clients.
 // ─────────────────────────────────────────────────────────────────────────
@@ -18,7 +20,8 @@ export interface Bilingual<T = string> {
 }
 
 export interface ShowcaseImage {
-  src: string;
+  /** One file per language: the page shows the one matching the site language. */
+  src: Bilingual;
   alt: Bilingual;
 }
 
@@ -63,16 +66,16 @@ export const SHOWCASE_PROJECTS: ShowcaseProject[] = [
     stack: ['Python', 'FastAPI', 'Ollama', 'SQLite'],
     images: [
       {
-        src: 'portfolio/local-ai-overview.png',
+        src: { zh: 'portfolio/local-ai-overview-zh.png', en: 'portfolio/local-ai-overview-en.png' },
         alt: {
           zh: '系统概览：文件按页切分、本地检索、本地模型生成带引用的回答',
           en: 'Overview: files split by page, local search, a local model writes a cited answer',
         },
       },
       {
-        src: 'portfolio/local-ai-sample-answer.png',
+        src: { zh: 'portfolio/local-ai-sample-answer-zh.png', en: 'portfolio/local-ai-sample-answer-en.png' },
         alt: {
-          zh: '一次测试运行的真实回答，带有引用编号和出处文件',
+          zh: '一次测试运行的真实回答（英文测试题，原文未改），带引用编号、出处文件和中文大意',
           en: 'A real answer from a test run, with citation numbers and the source file',
         },
       },
@@ -189,40 +192,40 @@ export const SHOWCASE_PROJECTS: ShowcaseProject[] = [
         '自动检查：跳过空行，拦下缺姓名或课程的行和重复记录，并写明原因。',
         '证书编号留空时按「前缀-年份-序号」自动编号；名字过长时自动缩小字号。',
         '输出每人一张 PNG、一个可直接打印的合并 PDF，以及一份生成记录表。',
-        '演示运行：32 行名单用时 3.6 秒，生成 30 张证书，拦下 2 行问题数据。',
+        '演示运行（中文名单）：32 行名单用时 3.6 秒，生成 30 张证书，拦下 2 行问题数据。',
       ],
       en: [
         'Checks the list first: skips blank rows and stops rows with a missing name or course, or a duplicate, with the reason.',
         'Numbers certificates as prefix-year-sequence when the number is blank, and shrinks long names to fit.',
         'Outputs one PNG per person, one merged print-ready PDF, and a log spreadsheet.',
-        'Demo run: a 32-row list took 3.6 seconds, made 30 certificates and stopped 2 bad rows.',
+        'Demo run on the English list: 32 rows took 1.9 seconds, made 30 certificates and stopped 2 bad rows.',
       ],
     },
     stack: ['Python', 'openpyxl', 'Pillow'],
     images: [
       {
-        src: 'portfolio/excel-cert-overview.png',
+        src: { zh: 'portfolio/excel-cert-overview-zh.png', en: 'portfolio/excel-cert-overview-en.png' },
         alt: {
           zh: '演示概览：Excel 名单一键批量生成证书',
           en: 'Demo overview: certificates generated in bulk from an Excel list',
         },
       },
       {
-        src: 'portfolio/excel-cert-input.png',
+        src: { zh: 'portfolio/excel-cert-input-zh.png', en: 'portfolio/excel-cert-input-en.png' },
         alt: {
           zh: '输入的 Excel 名单，红色两行是故意放进去的问题数据',
           en: 'The input Excel list; the two red rows are deliberately bad data',
         },
       },
       {
-        src: 'portfolio/excel-cert-output.png',
+        src: { zh: 'portfolio/excel-cert-output-zh.png', en: 'portfolio/excel-cert-output-en.png' },
         alt: {
           zh: '生成的证书，每人一张',
           en: 'The generated certificates, one per person',
         },
       },
       {
-        src: 'portfolio/excel-cert-log.png',
+        src: { zh: 'portfolio/excel-cert-log-zh.png', en: 'portfolio/excel-cert-log-en.png' },
         alt: {
           zh: '生成记录表：每一行成功或失败，以及失败原因',
           en: 'The log spreadsheet: success or failure for each row, with the reason',

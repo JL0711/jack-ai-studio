@@ -2,14 +2,21 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useI18n } from '../i18n/I18nProvider';
+import type { Lang } from '../i18n/strings';
 import { canUseDashboard } from '../lib/permissions';
 import { useTheme, type ThemeChoice } from '../lib/theme';
 import { AutoIcon, CloseIcon, MenuIcon, MoonIcon, SunIcon } from './Icons';
 
 const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { auto: 'light', light: 'dark', dark: 'auto' };
 
+/** Each language is named in itself, so a visitor can find theirs whichever one is showing. */
+const LANG_OPTIONS: { code: Lang; label: string; title: string; htmlLang: string }[] = [
+  { code: 'zh', label: '中文', title: '中文', htmlLang: 'zh-CN' },
+  { code: 'en', label: 'EN', title: 'English', htmlLang: 'en' },
+];
+
 export function Header() {
-  const { t, toggleLang } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const { theme, setTheme } = useTheme();
   const { viewer, signOut } = useAuth();
   const [open, setOpen] = useState(false);
@@ -56,15 +63,20 @@ export function Header() {
         </nav>
 
         <div className="header-tools">
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={toggleLang}
-            aria-label={t('lang.switchLabel')}
-            title={t('lang.switchLabel')}
-          >
-            {t('lang.switch')}
-          </button>
+          <div className="lang-switch" role="group" aria-label={t('lang.choose')}>
+            {LANG_OPTIONS.map((o) => (
+              <button
+                key={o.code}
+                type="button"
+                lang={o.htmlLang}
+                title={o.title}
+                aria-pressed={lang === o.code}
+                onClick={() => setLang(o.code)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             className="icon-btn"

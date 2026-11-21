@@ -72,9 +72,9 @@ export default function ShowcaseDetail() {
               <h2>{t('showcase.images')}</h2>
               <div className="gallery">
                 {project.images.map((img) => (
-                  <figure key={img.src}>
-                    <a href={assetUrl(img.src)} target="_blank" rel="noopener" title={t('showcase.openImage')}>
-                      <img src={assetUrl(img.src)} alt={pick(img.alt)} loading="lazy" width={1600} height={1200} />
+                  <figure key={img.src.en}>
+                    <a href={assetUrl(pick(img.src))} target="_blank" rel="noopener" title={t('showcase.openImage')}>
+                      <img src={assetUrl(pick(img.src))} alt={pick(img.alt)} loading="lazy" width={1600} height={1200} />
                     </a>
                     <figcaption>{pick(img.alt)}</figcaption>
                   </figure>
