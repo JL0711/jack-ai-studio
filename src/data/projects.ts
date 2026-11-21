@@ -176,6 +176,60 @@ export const SHOWCASE_PROJECTS: ShowcaseProject[] = [
     },
     stack: ['Python', 'python-docx', 'Gemini API'],
   },
+  {
+    slug: 'excel-certificates',
+    status: 'demo',
+    title: { zh: 'Excel 名单批量生成证书', en: 'Bulk Certificates from an Excel List' },
+    summary: {
+      zh: '读取 Excel 名单，按模板自动生成每个人的证书，先检查名单里的问题行。演示用的名单和机构都是虚构的。',
+      en: 'Reads an Excel list and fills a certificate template for every person, checking the list for bad rows first. The names and organisation in the demo are made up.',
+    },
+    highlights: {
+      zh: [
+        '自动检查：跳过空行，拦下缺姓名或课程的行和重复记录，并写明原因。',
+        '证书编号留空时按「前缀-年份-序号」自动编号；名字过长时自动缩小字号。',
+        '输出每人一张 PNG、一个可直接打印的合并 PDF，以及一份生成记录表。',
+        '演示运行：32 行名单用时 3.6 秒，生成 30 张证书，拦下 2 行问题数据。',
+      ],
+      en: [
+        'Checks the list first: skips blank rows and stops rows with a missing name or course, or a duplicate, with the reason.',
+        'Numbers certificates as prefix-year-sequence when the number is blank, and shrinks long names to fit.',
+        'Outputs one PNG per person, one merged print-ready PDF, and a log spreadsheet.',
+        'Demo run: a 32-row list took 3.6 seconds, made 30 certificates and stopped 2 bad rows.',
+      ],
+    },
+    stack: ['Python', 'openpyxl', 'Pillow'],
+    images: [
+      {
+        src: 'portfolio/excel-cert-overview.png',
+        alt: {
+          zh: '演示概览：Excel 名单一键批量生成证书',
+          en: 'Demo overview: certificates generated in bulk from an Excel list',
+        },
+      },
+      {
+        src: 'portfolio/excel-cert-input.png',
+        alt: {
+          zh: '输入的 Excel 名单，红色两行是故意放进去的问题数据',
+          en: 'The input Excel list; the two red rows are deliberately bad data',
+        },
+      },
+      {
+        src: 'portfolio/excel-cert-output.png',
+        alt: {
+          zh: '生成的证书，每人一张',
+          en: 'The generated certificates, one per person',
+        },
+      },
+      {
+        src: 'portfolio/excel-cert-log.png',
+        alt: {
+          zh: '生成记录表：每一行成功或失败，以及失败原因',
+          en: 'The log spreadsheet: success or failure for each row, with the reason',
+        },
+      },
+    ],
+  },
 ];
 
 export function findShowcaseProject(slug: string | undefined): ShowcaseProject | undefined {
