@@ -393,7 +393,7 @@ const en: Record<StringKey, string> = {
   'home.fact.location': 'Based in',
   'home.fact.locationValue': 'California, USA',
   'home.fact.languages': 'Languages',
-  'home.fact.languagesValue': '中文 · English',
+  'home.fact.languagesValue': 'Chinese · English',
   'home.fact.hardware': 'Local compute',
   'home.fact.hardwareValue': 'RTX 5070 Ti workstation',
   'home.servicesTitle': 'Services',
