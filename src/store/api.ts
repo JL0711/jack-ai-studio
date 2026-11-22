@@ -19,7 +19,8 @@ import type {
   Visibility,
 } from '../lib/types';
 
-export type ApiErrorCode = 'forbidden' | 'not_found' | 'invalid';
+/** network: the request got no HTTP answer at all (offline, blocked, or timed out). */
+export type ApiErrorCode = 'forbidden' | 'not_found' | 'invalid' | 'network';
 
 export class ApiError extends Error {
   code: ApiErrorCode;

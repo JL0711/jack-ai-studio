@@ -1876,6 +1876,48 @@
   }
 }
 
+.wechat-fallback {
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  background: var(--accent-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  animation: wechat-in 0.35s var(--ease-out) backwards;
+}
+.wechat-fallback p {
+  margin: 0 0 4px;
+}
+.wechat-fallback-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 10px;
+}
+.wechat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.wechat-id {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  user-select: all;
+}
+.wechat-copy-failed {
+  display: block;
+  margin: 8px 0 0;
+}
+@keyframes wechat-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
 /* ---------- auth ---------- */
 .auth-wrap {
   max-width: 460px;

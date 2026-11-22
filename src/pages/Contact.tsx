@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
+import { WeChatFallback } from '../components/WeChatFallback';
 import { useI18n } from '../i18n/I18nProvider';
 import type { StringKey } from '../i18n/strings';
 import { errorMessage } from '../lib/format';
@@ -14,8 +15,12 @@ import {
   type FieldError,
 } from '../lib/validation';
 import { getApi } from '../store';
+import { ApiError } from '../store/api';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
+
+/** After this long without an answer, the form also offers WeChat. */
+const SLOW_MS = 6000;
 
 const EMPTY: ContactInput = { name: '', contact: '', project_type: '', budget: null, message: '' };
 
@@ -33,6 +38,17 @@ export default function Contact() {
   const [touched, setTouched] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
+  const [networkError, setNetworkError] = useState(false);
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    if (status !== 'sending') {
+      setSlow(false);
+      return;
+    }
+    const id = window.setTimeout(() => setSlow(true), SLOW_MS);
+    return () => window.clearTimeout(id);
+  }, [status]);
 
   const errors = validateContact(form);
   const hasErrors = Object.keys(errors).length > 0;
@@ -61,9 +77,17 @@ export default function Contact() {
       setTouched(false);
     } catch (err) {
       setError(errorMessage(err));
+      setNetworkError(err instanceof ApiError && err.code === 'network');
       setStatus('error');
     }
   };
+
+  const draft = t('contact.wechat.draft', {
+    name: form.name.trim(),
+    type: form.project_type ? t(`ptype.${form.project_type}` as StringKey) : '—',
+    budget: form.budget ? t(`budget.${form.budget}` as StringKey) : '—',
+    message: form.message.trim(),
+  });
 
   const fieldClass = (field: ContactField) => `field${errorText(field) ? ' has-error' : ''}`;
 
@@ -215,8 +239,12 @@ export default function Contact() {
 
                 {status === 'error' && (
                   <p className="notice notice-error" role="alert">
-                    {t('contact.error', { msg: error })}
+                    {networkError ? t('contact.errorNetwork') : t('contact.error', { msg: error })}
                   </p>
+                )}
+
+                {(status === 'error' || (status === 'sending' && slow)) && (
+                  <WeChatFallback reason={status === 'error' ? 'failed' : 'slow'} draft={draft} />
                 )}
 
                 <div className="row">

@@ -23,8 +23,10 @@ const PROFILE_COLUMNS = 'id,email,display_name,role,approval_status,approved_at,
 // someone signs up. RLS limits everyone else to events for their own row.
 const LIVE_TABLES = ['projects', 'milestones', 'updates', 'comments', 'contact_messages', 'profiles'] as const;
 
-function check<T>(res: { data: T; error: { message: string; code?: string } | null }): T {
+function check<T>(res: { data: T; error: { message: string; code?: string } | null; status?: number }): T {
   if (res.error) {
+    // supabase-js reports a request that never got an HTTP answer as status 0.
+    if (res.status === 0) throw new ApiError('network', res.error.message);
     const code = res.error.code;
     if (code === '42501') throw new ApiError('forbidden', res.error.message);
     if (code === 'P0002' || code === 'PGRST116') throw new ApiError('not_found', res.error.message);
@@ -32,6 +34,15 @@ function check<T>(res: { data: T; error: { message: string; code?: string } | nu
     throw new Error(res.error.message);
   }
   return res.data;
+}
+
+const CONTACT_TIMEOUT_MS = 15_000;
+
+function timeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms);
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
 }
 
 export function createSupabaseStore(sb: SupabaseClient): StudioApi {
@@ -151,7 +162,14 @@ export function createSupabaseStore(sb: SupabaseClient): StudioApi {
 
     async submitContact(input) {
       // No .select() afterwards: anonymous visitors may insert but never read.
-      check(await sb.from('contact_messages').insert(cleanContact(input)));
+      // The time limit matters where Supabase is slow or unreachable (parts of
+      // mainland China): the form can then offer WeChat instead of hanging.
+      check(
+        await sb
+          .from('contact_messages')
+          .insert(cleanContact(input))
+          .abortSignal(timeoutSignal(CONTACT_TIMEOUT_MS)),
+      );
     },
 
     async listContactMessages() {
