@@ -83,9 +83,9 @@ const zh = {
   'home.live':
     '项目开始后，你可以登录本网站随时查看进度、里程碑和项目动态，在线留言，并直接点击「确认验收」。',
   'home.hoursTitle': '回复时间',
-  'home.hours': '北京时间每天 9–15 点',
-  'home.hoursAlt': '美国太平洋时间 5pm–11pm（夏令时 6pm–12am）',
-  'home.hoursNote': '我在这个时段内回复消息。',
+  'home.hours': '美国加州时间每天上午 9 点到次日凌晨 1 点',
+  'home.hoursAlt': '北京时间凌晨 1 点到下午 5 点（美国夏令时期间为 0 点到下午 4 点）',
+  'home.hoursNote': '这个时段内发来的消息，2 小时内回复。',
   'home.bottomTitle': '有项目想聊聊？',
   'home.bottomText': '先看看做过的项目，或者直接留言说明你的需求。',
 
@@ -143,7 +143,7 @@ const zh = {
   'fx.scroll': '往下看',
   'home.clock.beijing': '北京时间',
   'home.clock.pacific': '美国太平洋时间',
-  'home.clock.open': '现在是回复时段',
+  'home.clock.open': '现在是回复时段，2 小时内回复',
   'home.clock.closed': '现在不在回复时段，留言后我会在回复时段处理',
   'bridge.mac': 'Mac',
   'bridge.pc': 'Windows PC',
@@ -462,9 +462,9 @@ const en: Record<StringKey, string> = {
   'home.live':
     'Once a project starts, you can log in to this site any time to see progress, milestones and updates, leave comments, and click “Approve” on a milestone.',
   'home.hoursTitle': 'Response hours',
-  'home.hours': '9am–3pm Beijing time daily (evenings in California)',
-  'home.hoursAlt': 'California: 5–11pm (6pm–midnight during daylight saving time)',
-  'home.hoursNote': 'I reply to messages during these hours.',
+  'home.hours': '9am to 1am California time, every day',
+  'home.hoursAlt': 'Beijing: 1am to 5pm (midnight to 4pm during US daylight saving time)',
+  'home.hoursNote': 'Messages sent during these hours get a reply within 2 hours.',
   'home.bottomTitle': 'Have a project in mind?',
   'home.bottomText': 'Browse past projects, or leave a message describing what you need.',
 
@@ -521,7 +521,7 @@ const en: Record<StringKey, string> = {
   'fx.scroll': 'Scroll down',
   'home.clock.beijing': 'Beijing',
   'home.clock.pacific': 'California (Pacific)',
-  'home.clock.open': 'Inside reply hours right now',
+  'home.clock.open': 'Inside reply hours now: expect a reply within 2 hours',
   'home.clock.closed': 'Outside reply hours: leave a message and I’ll answer during them',
   'bridge.mac': 'Mac',
   'bridge.pc': 'Windows PC',

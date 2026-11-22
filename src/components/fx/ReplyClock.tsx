@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
 
-const OPEN_FROM = 9; // reply hours, Beijing time
-const OPEN_TO = 15;
+// Reply hours: 9am to 1am the next day, California time.
+const OPEN_FROM = 9;
+const OPEN_UNTIL = 1;
 
 interface ZoneTime {
   h: number;
@@ -60,13 +61,13 @@ export function ReplyClock() {
   const locale = lang === 'zh' ? 'zh-CN' : 'en-US';
   const beijing = zoneTime(now, 'Asia/Shanghai', locale, lang === 'en');
   const pacific = zoneTime(now, 'America/Los_Angeles', locale, lang === 'en');
-  const open = beijing.h >= OPEN_FROM && beijing.h < OPEN_TO;
+  const open = pacific.h >= OPEN_FROM || pacific.h < OPEN_UNTIL;
 
   return (
     <div className="reply-clock">
       <div className="clocks">
-        <Dial time={beijing} name={t('home.clock.beijing')} />
         <Dial time={pacific} name={t('home.clock.pacific')} />
+        <Dial time={beijing} name={t('home.clock.beijing')} />
       </div>
       <p className={`reply-status ${open ? 'is-open' : 'is-closed'}`}>
         <span className="reply-dot" aria-hidden="true" />
