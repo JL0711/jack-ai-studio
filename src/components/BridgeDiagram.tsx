@@ -21,12 +21,12 @@ export function BridgeDiagram() {
         {t('bridge.lan')}
       </text>
 
-      <rect x="18" y="78" width="112" height="140" rx="14" className="bd-box" />
+      <rect x="18" y="78" width="112" height="140" rx="14" className="bd-box bd-mac" />
       <text x="74" y="154" textAnchor="middle" className="bd-title">
         {t('bridge.mac')}
       </text>
 
-      <rect x="350" y="78" width="112" height="140" rx="14" className="bd-box" />
+      <rect x="350" y="78" width="112" height="140" rx="14" className="bd-box bd-pc" />
       <text x="406" y="138" textAnchor="middle" className="bd-title">
         Windows
       </text>
@@ -48,6 +48,14 @@ export function BridgeDiagram() {
       <text x="240" y="194" textAnchor="middle" className="bd-label">
         {t('bridge.out')}
       </text>
+
+      {/* Data packets travelling along the links (CSS animation, still with reduced motion). */}
+      <g className="bd-packets" aria-hidden="true">
+        <circle cx="150" cy="112" r="4" className="bd-packet bd-go-right" />
+        <circle cx="330" cy="112" r="4" className="bd-packet bd-go-left bd-late" />
+        <circle cx="150" cy="158" r="4" className="bd-packet bd-go-right bd-later" />
+        <circle cx="330" cy="204" r="4" className="bd-packet bd-go-left bd-latest" />
+      </g>
     </svg>
   );
 }

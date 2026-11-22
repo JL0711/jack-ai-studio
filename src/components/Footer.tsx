@@ -5,12 +5,15 @@ export function Footer() {
   const { t } = useI18n();
   return (
     <footer className="site-footer">
-      <div className="container">
+      <div className="container wide footer-row">
         <span>{t('footer.location')}</span>
         <span>
           <Link to="/contact">{t('footer.contact')}</Link>
         </span>
         <span>{t('footer.built')}</span>
+      </div>
+      <div className="footer-mark" aria-hidden="true">
+        Jack AI Studio
       </div>
     </footer>
   );

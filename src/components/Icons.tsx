@@ -83,3 +83,18 @@ export const PulseIcon = (p: P) => (
     <path d="M3 12h4l3-7 4 14 3-7h4" />
   </svg>
 );
+export const ArrowRightIcon = (p: P) => (
+  <svg {...base({ width: 18, height: 18, ...p })}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+export const CheckIcon = (p: P) => (
+  <svg {...base({ width: 16, height: 16, strokeWidth: 2.4, ...p })}>
+    <path d="M5 12.5l4.2 4.2L19 7" />
+  </svg>
+);
+export const ExpandIcon = (p: P) => (
+  <svg {...base({ width: 16, height: 16, ...p })}>
+    <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
+  </svg>
+);

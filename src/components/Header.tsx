@@ -1,13 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
+import { flushSync } from 'react-dom';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useI18n } from '../i18n/I18nProvider';
 import type { Lang } from '../i18n/strings';
 import { canUseDashboard } from '../lib/permissions';
-import { useTheme, type ThemeChoice } from '../lib/theme';
+import { prefersReducedMotion } from '../lib/motion';
+import { applyTheme, useTheme, type ThemeChoice } from '../lib/theme';
 import { AutoIcon, CloseIcon, MenuIcon, MoonIcon, SunIcon } from './Icons';
 
 const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { auto: 'light', light: 'dark', dark: 'auto' };
+
+type TransitionDoc = Document & {
+  startViewTransition?: (update: () => void) => { ready: Promise<void>; finished: Promise<void> };
+};
+
+/** Runs `update` inside a View Transition when the browser has one (and motion is allowed). */
+function withTransition(update: () => void, kind: 'theme' | 'lang', from?: { x: number; y: number }) {
+  const doc = document as TransitionDoc;
+  if (!doc.startViewTransition || prefersReducedMotion()) {
+    update();
+    return;
+  }
+  const root = document.documentElement;
+  root.dataset.vt = kind;
+  const vt = doc.startViewTransition(() => flushSync(update));
+  if (kind === 'theme' && from) {
+    // The new theme grows out of the button as a circle.
+    const r = Math.hypot(Math.max(from.x, innerWidth - from.x), Math.max(from.y, innerHeight - from.y));
+    vt.ready
+      .then(() =>
+        root.animate(
+          { clipPath: [`circle(0px at ${from.x}px ${from.y}px)`, `circle(${r}px at ${from.x}px ${from.y}px)`] },
+          { duration: 650, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)', pseudoElement: '::view-transition-new(root)' },
+        ),
+      )
+      .catch(() => undefined);
+  }
+  vt.finished.finally(() => delete root.dataset.vt).catch(() => undefined);
+}
 
 /** Each language is named in itself, so a visitor can find theirs whichever one is showing. */
 const LANG_OPTIONS: { code: Lang; label: string; title: string; htmlLang: string }[] = [
@@ -29,19 +60,38 @@ export function Header() {
   const ThemeIcon = theme === 'light' ? SunIcon : theme === 'dark' ? MoonIcon : AutoIcon;
   const themeLabel = `${t('theme.label')}: ${t(`theme.${theme}`)}`;
 
+  const onTheme = (e: MouseEvent<HTMLButtonElement>) => {
+    const next = NEXT_THEME[theme];
+    const rect = e.currentTarget.getBoundingClientRect();
+    withTransition(
+      () => {
+        applyTheme(next);
+        setTheme(next);
+      },
+      'theme',
+      { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+    );
+  };
+
+  const onLang = (code: Lang) => {
+    if (code !== lang) withTransition(() => setLang(code), 'lang');
+  };
+
   const onSignOut = async () => {
     await signOut().catch(() => undefined);
     navigate('/');
   };
 
   return (
-    <header className="site-header">
+    <header className={`site-header${open ? ' menu-open' : ''}`}>
       <div className="container bar">
         <Link to="/" className="brand" aria-label={t('brand.name')}>
           <span className="brand-mark" aria-hidden="true">
             J
           </span>
-          <span className="brand-text">{t('brand.name')}</span>
+          <span className="brand-text">
+            Jack <span className="brand-ai">AI</span> Studio
+          </span>
         </Link>
 
         <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
@@ -71,7 +121,7 @@ export function Header() {
                 lang={o.htmlLang}
                 title={o.title}
                 aria-pressed={lang === o.code}
-                onClick={() => setLang(o.code)}
+                onClick={() => onLang(o.code)}
               >
                 {o.label}
               </button>
@@ -80,7 +130,7 @@ export function Header() {
           <button
             type="button"
             className="icon-btn"
-            onClick={() => setTheme(NEXT_THEME[theme])}
+            onClick={onTheme}
             aria-label={themeLabel}
             title={themeLabel}
           >

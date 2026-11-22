@@ -8,6 +8,8 @@
 //    src: { zh: 'portfolio/<name>-zh.png', en: 'portfolio/<name>-en.png' }
 //    (no leading slash). Visitors see the one that matches the site language.
 //    Only use screenshots that show no real person's name, email or photo.
+//  - art: a built-in animated illustration for a card with no screenshots
+//    ('qr' = QR check-in, 'wave' = voice waveform, 'doc' = annotated pages).
 //  - Order in this list = order on the page.
 //  - Only write facts that are true. No invented numbers or clients.
 // ─────────────────────────────────────────────────────────────────────────
@@ -18,6 +20,8 @@ export interface Bilingual<T = string> {
   zh: T;
   en: T;
 }
+
+export type ShowcaseArt = 'qr' | 'wave' | 'doc';
 
 export interface ShowcaseImage {
   /** One file per language: the page shows the one matching the site language. */
@@ -37,6 +41,8 @@ export interface ShowcaseProject {
   images?: ShowcaseImage[];
   /** Built-in inline SVG diagram instead of a screenshot. */
   diagram?: 'bridge';
+  /** Built-in animated illustration instead of a screenshot. */
+  art?: ShowcaseArt;
 }
 
 export const SHOWCASE_PROJECTS: ShowcaseProject[] = [
@@ -106,6 +112,7 @@ export const SHOWCASE_PROJECTS: ShowcaseProject[] = [
       ],
     },
     stack: ['Next.js', 'Prisma', 'PostgreSQL', 'Vercel', 'Vitest', 'Playwright'],
+    art: 'qr',
   },
   {
     slug: 'mac-windows-bridge',
@@ -154,6 +161,7 @@ export const SHOWCASE_PROJECTS: ShowcaseProject[] = [
       ],
     },
     stack: ['Whisper', 'Apple Silicon', 'Ollama'],
+    art: 'wave',
   },
   {
     slug: 'word-annotation-export',
@@ -178,6 +186,7 @@ export const SHOWCASE_PROJECTS: ShowcaseProject[] = [
       ],
     },
     stack: ['Python', 'python-docx', 'Gemini API'],
+    art: 'doc',
   },
   {
     slug: 'excel-certificates',

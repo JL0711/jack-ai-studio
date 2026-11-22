@@ -20,13 +20,18 @@ function initialTheme(): ThemeChoice {
   return 'auto';
 }
 
+/** Puts the choice on <html> (CSS reads data-theme). Exported so a view transition can apply it at once. */
+export function applyTheme(theme: ThemeChoice) {
+  const root = document.documentElement;
+  if (theme === 'auto') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', theme);
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeChoice>(initialTheme);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'auto') root.removeAttribute('data-theme');
-    else root.setAttribute('data-theme', theme);
+    applyTheme(theme);
     try {
       if (theme === 'auto') localStorage.removeItem(STORAGE_KEY);
       else localStorage.setItem(STORAGE_KEY, theme);
