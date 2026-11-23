@@ -25,6 +25,8 @@ studio-site/
 ├─ package.json / vite.config.ts / tsconfig.json
 ├─ .env.example                 环境变量示例
 ├─ .github/workflows/deploy.yml  推送到 main 自动部署到 GitHub Pages
+├─ fonts/fusion-pixel/          像素字体原文件和许可证（OFL），构建时自动裁成子集
+├─ scripts/vite-plugins.mjs     构建插件：裁剪像素字体、页脚上的构建版本号
 ├─ public/portfolio/            展览馆截图
 ├─ supabase/
 │  ├─ schema.sql                在 Supabase SQL Editor 里运行的完整数据库脚本（新项目用这个）
@@ -40,8 +42,20 @@ studio-site/
    ├─ lib/permissions.ts        角色权限判断
    ├─ store/                    数据层：demoStore（演示）/ supabaseStore（正式）
    ├─ pages/                    各个页面
+   ├─ components/fx/            动画：首页的 ASCII 显卡（WebGL）、作品频道、项目示意动画、读数等
+   ├─ styles/                   tokens.css 是颜色和字体，其余按用途分文件
    └─ __tests__/                Vitest 单元测试
 ```
+
+### 视觉设计
+
+- 风格是「工作站控制台」：深色石墨底、暖白文字、唯一的强调色是琥珀色（像仪器上的指示灯）。浅色主题是同一套版式印在纸上的样子，右上角可以切换（深色 → 浅色 → 跟随系统）。
+- 字体：标题用 Hubot Sans（GitHub 出的开源字体），标签和小字用 Fusion Pixel 像素字体（支持中文），读数用 DSEG7 七段数码管字体。三种都是 OFL 开源许可。
+- 像素字体完整文件约 700 KB，`npm run dev` / `npm run build` 时会自动扫描 `src/` 里用到的字，裁成约 20 KB 的子集（生成在 `src/assets/generated/`，不提交）。新加的文字下次启动或构建时自动带上。
+- 像素字体只在 12px 或 24px 时清晰，用 `var(--pixel)` 时请保持这两个字号。
+- 首页的显卡是实时渲染的：WebGL2 光线步进出显卡的形状，再换成字符画；鼠标移上去风扇会加速，鼠标下的字符会被「解码」。不支持 WebGL2 的浏览器会直接不显示这张图。
+- 「作品」区每个项目都有一段示意动画（`components/fx/Scenes.tsx`），页面上标明了「示意动画」，真实截图在项目详情页里。
+- 系统设置了「减少动态效果」的访客，所有动画都会停在完成状态。
 
 ---
 

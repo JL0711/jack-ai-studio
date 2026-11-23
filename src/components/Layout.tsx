@@ -13,7 +13,7 @@ export function Layout() {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // Each public page fades in on navigation. The dashboard keeps one key so its
+  // Each public page wipes in on navigation. The dashboard keeps one key so its
   // inner pages don't reload their data on every click.
   const routeKey = pathname.startsWith('/dashboard') ? '/dashboard' : pathname;
 

@@ -1,0 +1,716 @@
+/* The small animated "screens" for each project (src/components/fx/Scenes.tsx).
+   Everything inside a scene is set in the 12px pixel font, like a device UI. */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  color: var(--text-muted);
+  -webkit-font-smoothing: none;
+  text-align: left;
+}
+.scene p {
+  margin: 0;
+}
+/* Big screens show the scene at 2x, so the pixel font stays sharp (24px) and fills the frame. */
+@container (min-width: 880px) {
+  .scene {
+    zoom: 2;
+  }
+}
+.sc-bar,
+.sc-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sc-bar {
+  border-bottom: 1px dashed var(--border);
+}
+.sc-foot {
+  border-top: 1px dashed var(--border);
+}
+.sc-foot span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-chip {
+  padding: 3px 5px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+.sc-chip.is-live {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 50%, transparent);
+}
+.sc-chip.is-wip {
+  color: var(--wip);
+  border-color: color-mix(in srgb, var(--wip) 50%, transparent);
+}
+.sc-line {
+  display: block;
+  height: 6px;
+  background: var(--border-strong);
+}
+.sc-line.is-ink {
+  background: var(--text-muted);
+}
+.sc-line.is-signal {
+  background: var(--signal);
+}
+.sc-line.is-red {
+  background: var(--danger);
+}
+.sc-caret {
+  display: inline-block;
+  width: 6px;
+  height: 12px;
+  margin-left: 2px;
+  vertical-align: top;
+  background: var(--signal);
+  animation: caret 1s steps(1) infinite;
+}
+.sc-prompt {
+  color: var(--accent);
+  margin-right: 6px;
+}
+
+/* ── 1. document Q&A ── */
+.sc-docqa-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  gap: 18px;
+  padding: 14px;
+  min-height: 0;
+}
+.sc-docs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 0;
+}
+.sc-doc {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 9px 8px;
+  min-height: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: border-color 0.3s, background 0.3s;
+}
+.sc-doc .sc-line {
+  height: 4px;
+}
+.sc-doc.is-read {
+  border-color: var(--border-strong);
+}
+.sc-doc.is-hit {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.sc-doc.rank-1 {
+  box-shadow: 0 0 0 1px var(--accent), 0 0 18px -4px var(--signal-glow);
+}
+.sc-rank {
+  position: absolute;
+  right: -1px;
+  top: -1px;
+  padding: 2px 4px;
+  background: var(--signal);
+  color: var(--on-signal);
+}
+.sc-file {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  color: var(--accent);
+}
+.sc-scanbar {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  height: 2px;
+  background: var(--signal);
+  box-shadow: 0 0 14px var(--signal-glow);
+}
+.sc-term {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  min-height: 0;
+  overflow: hidden;
+}
+.sc-meta {
+  color: var(--text-dim);
+}
+.sc-q {
+  color: var(--text);
+  line-height: 18px;
+}
+.sc-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-stages li {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.sc-stages li.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.sc-stages li.done {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 45%, transparent);
+}
+.sc-a {
+  color: var(--text);
+  line-height: 18px;
+}
+.sc-cite {
+  display: inline-block;
+  min-width: 14px;
+  margin: 0 2px;
+  padding: 1px 3px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 12px;
+  vertical-align: 1px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.sc-src {
+  color: var(--text-muted);
+  line-height: 18px;
+}
+.sc-src-label {
+  color: var(--accent);
+  margin-right: 6px;
+}
+@container (max-width: 520px) {
+  .sc-docqa-body {
+    grid-template-columns: 1fr;
+  }
+  .sc-docs {
+    display: none;
+  }
+}
+
+/* ── 2. robotics team: QR check-in ── */
+.sc-robo-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  padding: 16px 18px;
+  min-height: 0;
+}
+.sc-qr {
+  position: relative;
+  width: clamp(104px, 28cqw, 190px);
+  aspect-ratio: 1;
+  padding: 10px;
+  background: var(--text);
+  transition: box-shadow 0.2s;
+}
+.sc-qr.is-flash {
+  box-shadow: 0 0 0 3px var(--live), 0 0 26px var(--live);
+}
+.sc-qr-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--n), minmax(0, 1fr));
+  width: 100%;
+  height: 100%;
+}
+.sc-qr-cell {
+  background: var(--bg);
+}
+.sc-qr-finder {
+  border: 3px solid var(--bg);
+  padding: 3px;
+  background: var(--bg);
+  background-clip: content-box;
+}
+.sc-qr-laser {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger);
+}
+.sc-qr-corners {
+  position: absolute;
+  inset: -7px;
+  --c: var(--accent);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 16px no-repeat;
+}
+.sc-log {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+.sc-log li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) minmax(0, 0.55fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.sc-log li .sc-line {
+  height: 5px;
+}
+.sc-log li.is-new {
+  border-color: color-mix(in srgb, var(--live) 55%, var(--border));
+  animation: log-in 0.5s var(--ease-out);
+}
+@keyframes log-in {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+.sc-ok {
+  color: var(--live);
+}
+.sc-time {
+  color: var(--text-dim);
+}
+@container (max-width: 440px) {
+  .sc-robo-body {
+    gap: 14px;
+  }
+  .sc-log li:nth-child(n + 4) {
+    display: none;
+  }
+  .sc-log li .sc-line + .sc-line {
+    display: none;
+  }
+  .sc-log li {
+    grid-template-columns: 14px minmax(0, 1fr) auto;
+  }
+}
+
+/* ── 3. Mac ↔ Windows bridge ── */
+.sc-bridge-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  min-height: 0;
+}
+.sc-dev {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+.sc-dev.is-gpu {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-strong));
+}
+.sc-dev-title {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.sc-dev-title span {
+  display: block;
+  margin-top: 5px;
+  color: var(--accent);
+}
+.sc-dev-screen {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 104px;
+  padding: 10px;
+}
+.sc-dev-screen .sc-line {
+  height: 5px;
+}
+.sc-exit {
+  color: var(--live);
+}
+.sc-lanes {
+  display: grid;
+  gap: 16px;
+}
+.sc-lane {
+  display: grid;
+  gap: 7px;
+}
+.sc-lane-label {
+  text-align: center;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-lane-wire {
+  position: relative;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--border-strong) 0 6px, transparent 6px 10px);
+}
+.sc-packet {
+  position: absolute;
+  top: -3px;
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal-glow);
+}
+.sc-packet.is-back {
+  opacity: 0;
+}
+.sc-bridge.is-playing .sc-packet {
+  animation: pkt-right 1.9s linear infinite;
+  animation-delay: calc(var(--i) * 0.45s);
+}
+.sc-bridge.is-playing .dir-left .sc-packet,
+.sc-bridge.is-playing .sc-packet.is-back {
+  animation-name: pkt-left;
+}
+.sc-bridge.is-playing .sc-packet.is-back {
+  animation-delay: 0.95s;
+}
+@keyframes pkt-right {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 8px);
+    opacity: 0;
+  }
+}
+@keyframes pkt-left {
+  0% {
+    left: calc(100% - 8px);
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    left: 0;
+    opacity: 0;
+  }
+}
+@container (max-width: 470px) {
+  .sc-bridge-body {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sc-lanes {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* ── 4. call copilot ── */
+.sc-call {
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+}
+.sc-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 14px 16px;
+  min-height: 0;
+}
+.sc-wave i {
+  flex: 1;
+  min-height: 2px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+.sc-transcript {
+  display: grid;
+  gap: 9px;
+  padding: 0 16px;
+}
+.sc-transcript p {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+.sc-transcript p.is-hidden {
+  visibility: hidden;
+}
+.sc-transcript .sc-line {
+  height: 5px;
+}
+.sc-who {
+  color: var(--text-dim);
+}
+.sc-who.is-you {
+  color: var(--accent);
+}
+.sc-suggest {
+  display: grid;
+  gap: 8px;
+  margin: 14px 16px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-strong);
+  opacity: 0.45;
+  transition: opacity 0.4s, border-color 0.4s, background 0.4s;
+}
+.sc-suggest .sc-line {
+  height: 5px;
+  transition: width 0.2s linear;
+}
+.sc-suggest.is-on {
+  opacity: 1;
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.sc-suggest-label {
+  color: var(--accent);
+}
+
+/* ── 5. Word annotations ── */
+.sc-docx-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 18px;
+  padding: 16px;
+  min-height: 0;
+}
+.sc-page {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 16px 18px;
+  background: #f4f2ec;
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+.sc-page .sc-title {
+  height: 8px;
+  margin-bottom: 6px;
+  background: #2b2b2b;
+}
+.sc-docline {
+  position: relative;
+  display: block;
+  height: 5px;
+  background: #cfcabf;
+}
+.sc-mark {
+  position: absolute;
+  top: -3px;
+  height: 11px;
+  background: #ffe066;
+  animation: mark-in 0.45s var(--ease-out) backwards;
+}
+.sc-mark::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 3px;
+  height: 5px;
+  background: #d92d20;
+}
+@keyframes mark-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.sc-split {
+  position: relative;
+  min-height: 0;
+}
+.sc-mini {
+  --s: 0;
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 46%;
+  aspect-ratio: 3 / 4;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 10px;
+  background: #f4f2ec;
+  box-shadow: 0 0 0 1px var(--border-strong), 0 12px 22px -14px rgba(0, 0, 0, 0.7);
+  transform: translate(-50%, -50%) translate(calc((var(--k) - 1) * var(--s) * 72%), calc(var(--k) * var(--s) * 4%))
+    rotate(calc((var(--k) - 1) * var(--s) * 7deg));
+}
+.sc-mini .sc-line {
+  height: 4px;
+}
+.sc-mini .sc-line.is-ink {
+  background: #2b2b2b;
+}
+.sc-mini .sc-line:not(.is-ink):not(.is-red) {
+  background: #cfcabf;
+}
+.sc-mini .sc-line.is-red {
+  background: #d92d20;
+  box-shadow: 0 0 0 2px #ffe066;
+}
+.sc-mini-name {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -20px;
+  text-align: center;
+  color: var(--text-muted);
+  /* Names appear once the pages have fanned out. */
+  opacity: clamp(0, (var(--s) - 0.6) * 2.5, 1);
+}
+
+/* ── 6. Excel → certificates ── */
+.sc-xl-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 18px;
+  padding: 14px 16px;
+  min-height: 0;
+}
+.sc-sheet {
+  display: grid;
+  align-content: start;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+.sc-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 58px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sc-rownum {
+  color: var(--text-dim);
+}
+.sc-cell {
+  display: block;
+  height: 5px;
+  background: var(--border-strong);
+}
+.sc-row.is-cursor {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--signal);
+}
+.sc-row.is-done .sc-cell {
+  background: var(--text-dim);
+}
+.sc-row.is-bad {
+  background: var(--danger-bg);
+}
+.sc-row.is-bad .sc-cell {
+  background: var(--danger);
+  opacity: 0.6;
+}
+.sc-flag {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--live);
+}
+.sc-row.is-bad .sc-flag {
+  color: var(--danger);
+}
+.sc-certs {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+  min-height: 0;
+}
+.sc-stack {
+  position: relative;
+  min-height: 0;
+}
+.sc-cert {
+  position: absolute;
+  inset: 10% 12%;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  outline: 1px solid var(--border);
+  outline-offset: -6px;
+  opacity: 0;
+  transform: translate(calc(var(--k) * 6px), calc(var(--k) * -6px));
+  transition: opacity 0.3s;
+}
+.sc-cert.is-on {
+  opacity: 1;
+}
+.sc-cert .sc-line {
+  height: 5px;
+}
+.sc-count {
+  text-align: center;
+  color: var(--text-muted);
+}
+.sc-count b {
+  font-family: var(--seg);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 22px;
+  color: var(--accent);
+  margin-right: 4px;
+}
+@container (max-width: 470px) {
+  .sc-row {
+    grid-template-columns: 22px minmax(0, 1fr) 52px;
+  }
+  .sc-row .sc-cell + .sc-cell {
+    display: none;
+  }
+}

@@ -1,227 +1,231 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { CountUp } from '../components/fx/CountUp';
-import { HeroDemo } from '../components/fx/HeroDemo';
-import { Marquee } from '../components/fx/Marquee';
-import { NeuralField } from '../components/fx/NeuralField';
-import { ReplyClock } from '../components/fx/ReplyClock';
-import { Typewriter } from '../components/fx/Typewriter';
-import { ArrowRightIcon, ChatIcon, ChipIcon, DocIcon, FlowIcon, PulseIcon, WebIcon } from '../components/Icons';
+import { AsciiGpu, type AsciiLabel } from '../components/fx/AsciiGpu';
+import { BuildLog, PortalMock } from '../components/fx/BuildLog';
+import { ChannelMonitor } from '../components/fx/ChannelMonitor';
+import { Readout } from '../components/fx/Readout';
+import { Scramble } from '../components/fx/Scramble';
+import { TimeStrip } from '../components/fx/TimeStrip';
+import { ArrowRightIcon } from '../components/Icons';
 import { SHOWCASE_PROJECTS } from '../data/projects';
 import { useI18n } from '../i18n/I18nProvider';
 import type { StringKey } from '../i18n/strings';
-import { groupClass, revealClass, useInView } from '../lib/motion';
+import { BEIJING, PACIFIC, hhmm, isReplyOpen, pad2, useNow, zoneTime } from '../lib/replyHours';
 
-const SERVICES: { key: 'web' | 'rag' | 'local' | 'auto' | 'bilingual'; icon: ReactNode }[] = [
-  { key: 'local', icon: <ChipIcon /> },
-  { key: 'rag', icon: <DocIcon /> },
-  { key: 'web', icon: <WebIcon /> },
-  { key: 'auto', icon: <FlowIcon /> },
-  { key: 'bilingual', icon: <ChatIcon /> },
+const SERVICES: { key: 'web' | 'rag' | 'local' | 'auto' | 'bilingual'; tags: string[] }[] = [
+  { key: 'local', tags: ['Ollama', 'Whisper', 'qwen3:14b'] },
+  { key: 'rag', tags: ['FastAPI', 'bge-m3', 'SQLite'] },
+  { key: 'web', tags: ['React', 'Next.js', 'Supabase', 'PostgreSQL'] },
+  { key: 'auto', tags: ['Python', 'openpyxl', 'python-docx'] },
+  { key: 'bilingual', tags: ['中文', 'English'] },
 ];
 
-const STEPS = [1, 2, 3, 4, 5] as const;
-
-/** Every stack name used in the showcase, plus what this site itself is built with. */
-const TECH = Array.from(
-  new Set([...SHOWCASE_PROJECTS.flatMap((p) => p.stack), 'React', 'TypeScript', 'Vite', 'Supabase']),
-).filter((name) => !name.includes('('));
-
-function SectionHead({ n, id, title }: { n: string; id: string; title: string }) {
-  const { ref, inView } = useInView<HTMLDivElement>();
+function SectionHead({ idx, label, title, id, aside }: { idx: string; label: string; title: string; id: string; aside?: ReactNode }) {
   return (
-    <div ref={ref} className={revealClass(inView, 'section-head')}>
-      <span className="kicker" aria-hidden="true">
-        {n}
+    <header className="section-head">
+      <span className="kicker">
+        <b>{idx}</b>
+        <span aria-hidden="true">//</span>
+        {label}
       </span>
-      <h2 id={id}>{title}</h2>
+      <h2 id={id}>
+        <Scramble text={title} />
+      </h2>
+      {aside && <p className="section-aside">{aside}</p>}
+    </header>
+  );
+}
+
+/** Live status line above the headline: reply hours and the two clocks. */
+function HeroHud() {
+  const { t } = useI18n();
+  const now = useNow(1000);
+  const open = isReplyOpen(now);
+  const pt = zoneTime(now, PACIFIC);
+  return (
+    <div className="hero-hud">
+      <span>
+        <i className={`led ${open ? 'is-live' : 'is-off'}`} aria-hidden="true" />
+        {open ? t('hud.open') : t('hud.closed')}
+      </span>
+      <span>
+        {t('home.clock.pacific')} {hhmm(pt)}
+        <span className="hud-sec" aria-hidden="true">
+          :{pad2(pt.s)}
+        </span>
+      </span>
+      <span>
+        {t('home.clock.beijing')} {hhmm(zoneTime(now, BEIJING))}
+      </span>
     </div>
   );
 }
 
 export default function Home() {
-  const { t } = useI18n();
-  const stats = useInView<HTMLUListElement>();
-  const services = useInView<HTMLUListElement>();
-  const steps = useInView<HTMLOListElement>();
-  const live = useInView<HTMLDivElement>();
-  const hours = useInView<HTMLDivElement>();
-  const cta = useInView<HTMLDivElement>();
+  const { t, lang } = useI18n();
 
-  const words = [t('fx.type.1'), t('fx.type.2'), t('fx.type.3'), t('fx.type.4')];
+  const labels: AsciiLabel[] = [
+    { text: t('hero.label.gpu'), at: [-0.35, 0.58, 0.03] },
+    { text: t('hero.label.models'), at: [0.98, 0.22, 0.16] },
+    { text: t('hero.label.cloud'), at: [-0.45, -0.69, -0.13] },
+  ];
 
   return (
     <>
-      <section className="hero">
-        <div className="hero-bg" aria-hidden="true">
-          <div className="aurora">
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="hero-grid-bg" />
-          <NeuralField />
+      <section className="hero" aria-labelledby="hero-title">
+        <div className="hero-figure">
+          <AsciiGpu labels={labels} caption={t('hero.caption')} />
         </div>
-
-        <div className="container wide hero-layout">
-          <div className="hero-copy">
-            <span className="hero-pill">
-              <span className="ping" aria-hidden="true" />
-              {t('home.eyebrow')}
+        <div className="container wide hero-inner">
+          <HeroHud />
+          <h1 id="hero-title" className="hero-title">
+            <span className="hero-line">
+              <Scramble text={t('hero.title1')} duration={1000} />
             </span>
-            <h1>
-              <span className="hero-title">Jack AI Studio</span>
-              <span className="hero-sub">{t('home.heroSub')}</span>
-            </h1>
-            <p className="hero-type">
-              {t('fx.typePrefix')} <Typewriter words={words} label={t('fx.typeAll')} />
-            </p>
-            <p className="pitch">{t('home.pitch')}</p>
-            <div className="hero-actions">
-              <Link to="/showcase" className="btn btn-primary btn-lg" data-fx="magnet">
-                {t('home.ctaShowcase')}
-                <ArrowRightIcon />
-              </Link>
-              <Link to="/contact" className="btn btn-secondary btn-lg" data-fx="magnet">
-                {t('home.ctaContact')}
-              </Link>
-            </div>
-            <ul className="facts">
-              <li>
-                <span className="fact-label">{t('home.fact.location')}</span>
-                <span className="fact-value">{t('home.fact.locationValue')}</span>
-              </li>
-              <li>
-                <span className="fact-label">{t('home.fact.languages')}</span>
-                <span className="fact-value">{t('home.fact.languagesValue')}</span>
-              </li>
-              <li>
-                <span className="fact-label">{t('home.fact.hardware')}</span>
-                <span className="fact-value">{t('home.fact.hardwareValue')}</span>
-              </li>
-            </ul>
+            <span className="hero-line is-dim">
+              <Scramble text={t('hero.title2')} duration={1100} delay={200} />
+            </span>
+          </h1>
+          <p className="hero-lede">{t('hero.lede')}</p>
+          <div className="hero-actions">
+            <Link to="/showcase" className="btn btn-primary btn-lg">
+              {t('home.ctaShowcase')}
+              <ArrowRightIcon />
+            </Link>
+            <Link to="/contact" className="btn btn-secondary btn-lg">
+              {t('home.ctaContact')}
+            </Link>
           </div>
-          <HeroDemo />
+          <dl className="hero-specs">
+            <div>
+              <dt>{t('home.fact.location')}</dt>
+              <dd>{t('home.fact.locationValue')}</dd>
+            </div>
+            <div>
+              <dt>{t('home.fact.languages')}</dt>
+              <dd>{t('home.fact.languagesValue')}</dd>
+            </div>
+            <div>
+              <dt>{t('home.fact.hardware')}</dt>
+              <dd>{t('home.fact.hardwareValue')}</dd>
+            </div>
+          </dl>
         </div>
-
-        <span className="scroll-cue" aria-hidden="true" title={t('fx.scroll')}>
-          <span />
-        </span>
+        <a href="#readouts" className="scroll-cue" onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('readouts')?.scrollIntoView({ behavior: 'smooth' });
+        }}>
+          <span aria-hidden="true">↓</span> {t('fx.scroll')}
+        </a>
       </section>
 
-      <section className="stats-band" aria-labelledby="stats-title">
-        <div className="container wide">
-          <h2 id="stats-title" className="visually-hidden">
-            {t('fx.statsTitle')}
-          </h2>
-          <ul ref={stats.ref} className={groupClass(stats.inView, 'stat-grid')}>
-            <li className="stat-card" data-fx="spot">
-              <span className="stat-num">
-                <CountUp to={24} suffix=" / 24" />
-              </span>
-              <span className="stat-text">{t('fx.stat.top3')}</span>
-            </li>
-            <li className="stat-card" data-fx="spot">
-              <span className="stat-num">
-                <CountUp to={100} suffix="%" />
-              </span>
-              <span className="stat-text">{t('fx.stat.offline')}</span>
-            </li>
-            <li className="stat-card" data-fx="spot">
-              <span className="stat-num">
-                <CountUp to={30} prefix="~" />
-              </span>
-              <span className="stat-text">{t('fx.stat.users')}</span>
-            </li>
-            <li className="stat-card" data-fx="spot">
-              <span className="stat-num">
-                <CountUp to={SHOWCASE_PROJECTS.length} />
-              </span>
-              <span className="stat-text">{t('fx.stat.projects')}</span>
-            </li>
-          </ul>
+      <section id="readouts" className="readouts" aria-labelledby="readouts-title">
+        <h2 id="readouts-title" className="visually-hidden">
+          {t('fx.statsTitle')}
+        </h2>
+        <div className="container wide readout-grid">
+          <Readout parts={['24', '/', '24']} label={t('readout.top3')} />
+          <Readout parts={['0']} label={t('readout.cloud')} />
+          <Readout parts={['~', '30']} label={t('readout.users')} />
+          <Readout parts={[t('readout.cert.value')]} unit="s" label={t('readout.cert')} />
         </div>
-        <Marquee items={TECH} label={t('fx.stackTitle')} />
       </section>
 
-      <section className="section" aria-labelledby="services-title">
+      <section className="section work" aria-labelledby="work-title">
         <div className="container wide">
-          <SectionHead n="01" id="services-title" title={t('home.servicesTitle')} />
-          <ul ref={services.ref} className={groupClass(services.inView, 'service-list')}>
-            {SERVICES.map((s) => (
-              <li key={s.key} className="card service" data-fx="spot">
-                <span className="service-bg-icon" aria-hidden="true">
-                  {s.icon}
+          <SectionHead
+            idx="01"
+            label={t('home.workLabel')}
+            id="work-title"
+            title={t('home.workTitle', { n: SHOWCASE_PROJECTS.length })}
+            aside={t('home.workAside')}
+          />
+          <ChannelMonitor />
+          <p className="section-more">
+            <Link to="/showcase" className="text-link">
+              {t('home.allWork')}
+              <ArrowRightIcon width={16} height={16} />
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      <section className="section services" aria-labelledby="services-title">
+        <div className="container wide">
+          <SectionHead idx="02" label={t('home.servicesLabel')} id="services-title" title={t('home.servicesTitle')} />
+          <ol className="spec-table">
+            {SERVICES.map((s, i) => (
+              <li key={s.key} className="spec-row">
+                <span className="spec-code" aria-hidden="true">
+                  S-{pad2(i + 1)}
                 </span>
-                <span className="service-icon">{s.icon}</span>
-                <div>
-                  <h3>{t(`home.service.${s.key}` as StringKey)}</h3>
-                  <p>{t(`home.service.${s.key}.desc` as StringKey)}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="section" aria-labelledby="process-title">
-        <div className="container wide">
-          <SectionHead n="02" id="process-title" title={t('home.processTitle')} />
-          <ol ref={steps.ref} className={groupClass(steps.inView, 'steps')}>
-            {STEPS.map((n) => (
-              <li key={n}>
-                <span className="step-dot" aria-hidden="true">
-                  {n}
-                </span>
-                <div className="step-card" data-fx="spot">
-                  <h3>{t(`home.step${n}` as StringKey)}</h3>
-                  <p>{t(`home.step${n}.desc` as StringKey)}</p>
-                </div>
+                <h3 className="spec-name">{t(`home.service.${s.key}` as StringKey)}</h3>
+                <p className="spec-desc">{t(`home.service.${s.key}.desc` as StringKey)}</p>
+                <ul className="spec-tags tags" aria-label={t('showcase.stack')}>
+                  {s.tags.map((tag) => (
+                    <li key={tag} className="tag" lang={tag === '中文' ? 'zh-CN' : undefined}>
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
               </li>
             ))}
           </ol>
-          <div ref={live.ref} className={revealClass(live.inView, 'card live-callout')} data-fx="spot">
-            <span className="service-icon live-icon">
-              <PulseIcon />
-            </span>
-            <div>
+        </div>
+      </section>
+
+      <section className="section process" aria-labelledby="process-title">
+        <div className="container wide">
+          <SectionHead idx="03" label={t('home.processLabel')} id="process-title" title={t('home.processTitle')} />
+          <div className="process-grid">
+            <BuildLog />
+            <div className="process-live">
               <h3>
-                {t('home.liveTitle')} <span className="live-ping" aria-hidden="true" />
+                <span className="led is-live" aria-hidden="true" /> {t('home.liveTitle')}
               </h3>
-              <p className="muted" style={{ margin: 0 }}>
-                {t('home.live')}
-              </p>
+              <p className="muted">{t('home.live')}</p>
+              <PortalMock />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="section" aria-labelledby="hours-title">
+      <section className="section hours" aria-labelledby="hours-title">
         <div className="container wide">
-          <SectionHead n="03" id="hours-title" title={t('home.hoursTitle')} />
-          <div ref={hours.ref} className={revealClass(hours.inView, 'card hours-card')} data-fx="spot">
+          <SectionHead idx="04" label={t('home.hoursLabel')} id="hours-title" title={t('home.hoursTitle')} />
+          <div className="hours-grid">
             <div className="hours-text">
-              <span className="hours-main">{t('home.hours')}</span>
-              <span className="muted">{t('home.hoursAlt')}</span>
-              <span className="muted small">{t('home.hoursNote')}</span>
+              <p className="hours-main">{t('home.hours')}</p>
+              <p className="muted">{t('home.hoursAlt')}</p>
+              <p className="muted small">{t('home.hoursNote')}</p>
             </div>
-            <ReplyClock />
+            <TimeStrip />
           </div>
         </div>
       </section>
 
-      <section className="section">
+      <section className="section cta" aria-labelledby="cta-title">
         <div className="container wide">
-          <div ref={cta.ref} className={revealClass(cta.inView, 'cta-band')}>
-            <h2>{t('home.bottomTitle')}</h2>
-            <p>{t('home.bottomText')}</p>
+          <div className="cta-term ticks">
+            <div className="cta-term-head" aria-hidden="true">
+              <span>~/jack-ai-studio</span>
+              <span>{lang === 'zh' ? 'zsh — 中文' : 'zsh — en'}</span>
+            </div>
+            <h2 id="cta-title" className="cta-title">
+              <span className="cta-prompt" aria-hidden="true">
+                ›
+              </span>
+              {t('home.bottomTitle')}
+              <span className="cta-caret" aria-hidden="true" />
+            </h2>
+            <p className="cta-sub">{t('home.bottomText')}</p>
             <div className="row">
-              <Link to="/showcase" className="btn btn-primary btn-lg" data-fx="magnet">
-                {t('home.ctaShowcase')}
+              <Link to="/contact" className="btn btn-primary btn-lg">
+                {t('home.ctaContact')}
                 <ArrowRightIcon />
               </Link>
-              <Link to="/contact" className="btn btn-secondary btn-lg" data-fx="magnet">
-                {t('home.ctaContact')}
+              <Link to="/showcase" className="btn btn-secondary btn-lg">
+                {t('home.ctaShowcase')}
               </Link>
             </div>
           </div>

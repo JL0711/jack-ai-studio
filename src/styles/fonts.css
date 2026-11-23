@@ -1,0 +1,10 @@
+/* Fusion Pixel 12px (OFL 1.1, fonts/fusion-pixel/). The file is a subset made at
+   build time by scripts/vite-plugins.mjs: only the characters this site uses.
+   Pixel fonts stay sharp only at 12px multiples, so use --pixel at 12px or 24px. */
+@font-face {
+  font-family: 'Fusion Pixel';
+  src: url('../assets/generated/pixel-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

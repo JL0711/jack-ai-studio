@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
+import { Scramble } from '../components/fx/Scramble';
 import { WeChatFallback } from '../components/WeChatFallback';
 import { useI18n } from '../i18n/I18nProvider';
 import type { StringKey } from '../i18n/strings';
 import { errorMessage } from '../lib/format';
+import { BEIJING, PACIFIC, hhmm, isReplyOpen, useNow, zoneTime } from '../lib/replyHours';
 import type { ContactInput } from '../lib/types';
 import {
   BUDGETS,
@@ -18,6 +20,24 @@ import { getApi } from '../store';
 import { ApiError } from '../store/api';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
+
+/** Whether a message sent now falls inside reply hours, with both clocks. */
+function ReplyNow() {
+  const { t } = useI18n();
+  const now = useNow(15000);
+  const open = isReplyOpen(now);
+  return (
+    <p className={`reply-now${open ? ' is-open' : ''}`}>
+      <span className={`led ${open ? 'is-live' : 'is-off'}`} aria-hidden="true" />
+      <span>
+        {open ? t('home.clock.open') : t('home.clock.closed')}
+        <span className="reply-now-clock">
+          {t('home.clock.pacific')} {hhmm(zoneTime(now, PACIFIC))} · {t('home.clock.beijing')} {hhmm(zoneTime(now, BEIJING))}
+        </span>
+      </span>
+    </p>
+  );
+}
 
 /** After this long without an answer, the form also offers WeChat. */
 const SLOW_MS = 6000;
@@ -95,12 +115,23 @@ export default function Contact() {
     <div className="page">
       <div className="container">
         <header className="page-head">
-          <h1>{t('contact.title')}</h1>
+          <span className="kicker">
+            <b>03</b>
+            <span aria-hidden="true">//</span>
+            {t('contact.kicker')}
+          </span>
+          <h1>
+            <Scramble text={t('contact.title')} />
+          </h1>
           <p>{t('contact.intro')}</p>
         </header>
 
         <div className="contact-layout">
-          <section className="card">
+          <section className="card contact-card ticks">
+            <div className="contact-card-head" aria-hidden="true">
+              <span>contact.form</span>
+              <span>{demo ? t('demo.title') : 'POST → Supabase'}</span>
+            </div>
             {demo && (
               <p className="notice notice-demo" role="note" style={{ marginTop: 0 }}>
                 {t('contact.demoNotice')}
@@ -248,8 +279,9 @@ export default function Contact() {
                 )}
 
                 <div className="row">
-                  <button type="submit" className="btn btn-primary" disabled={status === 'sending'}>
+                  <button type="submit" className="btn btn-primary btn-lg" disabled={status === 'sending'}>
                     {status === 'sending' ? t('contact.sending') : t('contact.submit')}
+                    <span aria-hidden="true">↵</span>
                   </button>
                   <span className="hint">{t('contact.privacy')}</span>
                 </div>
@@ -257,21 +289,34 @@ export default function Contact() {
             )}
           </section>
 
-          <aside className="stack">
+          <aside className="contact-aside">
             <div className="card">
-              <h3>{t('home.hoursTitle')}</h3>
-              <p style={{ margin: 0 }}>
+              <h2 className="aside-h">{t('home.hoursTitle')}</h2>
+              <ReplyNow />
+              <p style={{ margin: '14px 0 0' }}>
                 <strong>{t('home.hours')}</strong>
                 <br />
                 <span className="muted">{t('home.hoursAlt')}</span>
               </p>
+              <p className="muted small" style={{ margin: '8px 0 0' }}>
+                {t('home.hoursNote')}
+              </p>
             </div>
             <div className="card">
-              <h3>{t('home.fact.location')}</h3>
-              <p style={{ margin: 0 }}>{t('home.fact.locationValue')}</p>
-              <p className="muted small" style={{ margin: '6px 0 0' }}>
-                {t('home.fact.languages')} · {t('home.fact.languagesValue')}
-              </p>
+              <dl className="kv">
+                <div>
+                  <dt>{t('home.fact.location')}</dt>
+                  <dd>{t('home.fact.locationValue')}</dd>
+                </div>
+                <div>
+                  <dt>{t('home.fact.languages')}</dt>
+                  <dd>{t('home.fact.languagesValue')}</dd>
+                </div>
+                <div>
+                  <dt>{t('home.fact.hardware')}</dt>
+                  <dd>{t('home.fact.hardwareValue')}</dd>
+                </div>
+              </dl>
             </div>
           </aside>
         </div>

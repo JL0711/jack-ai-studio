@@ -7,9 +7,22 @@ import type { Lang } from '../i18n/strings';
 import { canUseDashboard } from '../lib/permissions';
 import { prefersReducedMotion } from '../lib/motion';
 import { applyTheme, useTheme, type ThemeChoice } from '../lib/theme';
+import { isReplyOpen, useNow } from '../lib/replyHours';
 import { AutoIcon, CloseIcon, MenuIcon, MoonIcon, SunIcon } from './Icons';
 
-const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { auto: 'light', light: 'dark', dark: 'auto' };
+/** "Replying now" / "Off hours", from the reply window in California time. */
+function ReplyStatus() {
+  const { t } = useI18n();
+  const open = isReplyOpen(useNow(30000));
+  return (
+    <span className="hdr-status" title={t('home.hours')}>
+      <span className={`led ${open ? 'is-live' : 'is-off'}`} aria-hidden="true" />
+      {open ? t('hud.open') : t('hud.closed')}
+    </span>
+  );
+}
+
+const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { dark: 'light', light: 'auto', auto: 'dark' };
 
 type TransitionDoc = Document & {
   startViewTransition?: (update: () => void) => { ready: Promise<void>; finished: Promise<void> };
@@ -84,23 +97,33 @@ export function Header() {
 
   return (
     <header className={`site-header${open ? ' menu-open' : ''}`}>
-      <div className="container bar">
+      <div className="container wide bar">
         <Link to="/" className="brand" aria-label={t('brand.name')}>
-          <span className="brand-mark" aria-hidden="true">
-            J
-          </span>
-          <span className="brand-text">
-            Jack <span className="brand-ai">AI</span> Studio
+          <span className="brand-led" aria-hidden="true" />
+          <span className="brand-text" aria-hidden="true">
+            Jack<i>/</i>AI<i>/</i>Studio
           </span>
         </Link>
 
         <nav id="main-nav" className={`main-nav${open ? ' open' : ''}`} aria-label="Main">
           <NavLink to="/" end>
+            <span className="nav-idx" aria-hidden="true">01</span>
             {t('nav.home')}
           </NavLink>
-          <NavLink to="/showcase">{t('nav.showcase')}</NavLink>
-          <NavLink to="/contact">{t('nav.contact')}</NavLink>
-          {signedIn && <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink>}
+          <NavLink to="/showcase">
+            <span className="nav-idx" aria-hidden="true">02</span>
+            {t('nav.showcase')}
+          </NavLink>
+          <NavLink to="/contact">
+            <span className="nav-idx" aria-hidden="true">03</span>
+            {t('nav.contact')}
+          </NavLink>
+          {signedIn && (
+            <NavLink to="/dashboard">
+              <span className="nav-idx" aria-hidden="true">04</span>
+              {t('nav.dashboard')}
+            </NavLink>
+          )}
           <span className="nav-auth">
             {signedIn ? (
               <button type="button" className="btn btn-ghost btn-small" onClick={onSignOut}>
@@ -113,6 +136,7 @@ export function Header() {
         </nav>
 
         <div className="header-tools">
+          <ReplyStatus />
           <div className="lang-switch" role="group" aria-label={t('lang.choose')}>
             {LANG_OPTIONS.map((o) => (
               <button

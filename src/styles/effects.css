@@ -1,65 +1,26 @@
-/* Site-wide effects: ambient glow, reveal on scroll, pointer light and tilt,
-   page and theme transitions, glass header, gradient buttons, footer wordmark.
-   Everything here is decorative; the reduced-motion block at the end turns motion off. */
+/* Site-wide motion: page wipe, reveal on scroll, scrambled text, view transitions.
+   Everything here is decorative; the reduced-motion block at the end turns it off. */
 
 html {
-  scrollbar-color: color-mix(in srgb, var(--accent) 45%, var(--border)) transparent;
-}
-::selection {
-  background: color-mix(in srgb, var(--fx-1) 28%, transparent);
+  scrollbar-color: var(--border-strong) transparent;
 }
 
-.container.wide {
-  max-width: 1200px;
-}
-
-/* ---------- ambient background ---------- */
-.app {
-  position: relative;
-  isolation: isolate;
-}
-.app::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(900px 520px at 100% -8%, var(--fx-glow-b), transparent 62%),
-    radial-gradient(760px 480px at -12% 18%, var(--fx-glow-a), transparent 60%),
-    radial-gradient(700px 500px at 50% 118%, var(--fx-glow-c), transparent 60%);
-  opacity: 0.55;
-}
-/* Film grain, so the flat colours feel less digital. */
+/* Fine grain over everything, so the flat dark doesn't look like a template. */
 .app::after {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 100;
   pointer-events: none;
-  opacity: 0.45;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .07 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.32;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-theme='light'] .app::after {
+  opacity: 0.5;
+  filter: invert(1);
 }
 
-.cursor-glow {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: -1;
-  width: 620px;
-  height: 620px;
-  margin: -310px 0 0 -310px;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.5s;
-  background: radial-gradient(circle, var(--cursor-glow), transparent 64%);
-  will-change: transform;
-}
-html:not(.fx-pointer) .cursor-glow {
-  display: none;
-}
-
+/* Reading progress: a 2px signal line along the top edge. */
 .scroll-progress {
   position: fixed;
   top: 0;
@@ -70,63 +31,65 @@ html:not(.fx-pointer) .cursor-glow {
   pointer-events: none;
   transform: scaleX(0);
   transform-origin: 0 50%;
-  background: linear-gradient(90deg, var(--fx-1), var(--fx-2), var(--fx-3));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--fx-2) 60%, transparent);
+  background: var(--signal);
+  box-shadow: 0 0 10px var(--signal-glow);
 }
 
-/* Soft glow at the top of every inner page. */
-.page {
-  position: relative;
-}
-.page::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  left: 50%;
-  top: -140px;
-  width: min(1100px, 100%);
-  height: 480px;
-  translate: -50% 0;
-  pointer-events: none;
-  background:
-    radial-gradient(closest-side at 30% 50%, var(--fx-glow-a), transparent),
-    radial-gradient(closest-side at 72% 40%, var(--fx-glow-c), transparent);
-  opacity: 0.8;
-}
-.page-head h1 {
-  width: fit-content;
-  max-width: 100%;
-  font-size: clamp(2rem, 1.3rem + 2.8vw, 3.2rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: var(--fx-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  padding-bottom: 0.06em;
+/* Header gets a stronger edge once the page scrolls. */
+html.is-scrolled .site-header {
+  border-bottom-color: var(--border-strong);
 }
 
-/* ---------- page transition ---------- */
+/* ---------- page transition: a scan line sweeps down as the page comes in ---------- */
 .route-fade {
-  animation: fx-page 0.55s var(--ease-out) backwards;
+  animation: route-in 0.55s var(--ease-out) backwards;
 }
-@keyframes fx-page {
+.route-fade::before {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--header-h);
+  z-index: 40;
+  height: 2px;
+  pointer-events: none;
+  background: var(--signal);
+  box-shadow: 0 0 14px var(--signal-glow);
+  opacity: 0;
+  animation: route-scan 0.65s var(--ease-snap);
+}
+@keyframes route-in {
   from {
     opacity: 0;
-    translate: 0 14px;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes route-scan {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(70vh);
   }
 }
 
-/* ---------- reveal on scroll ----------
-   `translate`/`scale` (not `transform`) so hover tilts on the same element still work. */
+/* ---------- reveal on scroll ---------- */
 .reveal:not(.is-visible),
 .reveal-group:not(.is-visible) > * {
   opacity: 0;
 }
 .reveal.is-visible,
 .reveal-group.is-visible > * {
-  animation: fx-rise 0.85s var(--ease-out) backwards;
-  animation-delay: calc(var(--i, 0) * 90ms);
+  animation: fx-rise 0.8s var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 80ms);
 }
 .reveal-group > :nth-child(2) { --i: 1; }
 .reveal-group > :nth-child(3) { --i: 2; }
@@ -138,84 +101,23 @@ html:not(.fx-pointer) .cursor-glow {
 @keyframes fx-rise {
   from {
     opacity: 0;
-    translate: 0 26px;
-    scale: 0.985;
+    translate: 0 14px;
   }
 }
 
-/* ---------- pointer effects (data-fx) ---------- */
-[data-fx~='spot'] {
+/* ---------- scrambled text (components/fx/Scramble.tsx) ---------- */
+.scramble {
   position: relative;
-  isolation: isolate;
+  display: inline-block;
 }
-/* Light under the content, following the mouse. */
-[data-fx~='spot']::before {
-  content: '';
+.scramble.is-running .scramble-final {
+  color: transparent;
+}
+.scramble-live {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  border-radius: inherit;
+  overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(
-    440px circle at var(--mx, 50%) var(--my, 50%),
-    color-mix(in srgb, var(--fx-1) 12%, transparent),
-    transparent 46%
-  );
-  opacity: 0;
-  transition: opacity 0.35s;
-}
-/* A brighter edge where the mouse is (a 1px ring cut out with a mask). */
-[data-fx~='spot']::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  background: radial-gradient(
-    260px circle at var(--mx, 50%) var(--my, 50%),
-    color-mix(in srgb, var(--fx-2) 80%, transparent),
-    transparent 62%
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.35s;
-}
-[data-fx~='spot'].fx-hover::before,
-[data-fx~='spot'].fx-hover::after {
-  opacity: 1;
-}
-
-[data-fx~='tilt'] {
-  transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
-  transition:
-    transform 0.6s var(--ease-out),
-    box-shadow 0.4s,
-    border-color 0.3s;
-}
-[data-fx~='tilt'].fx-hover {
-  --lift: -4px;
-  transition-duration: 0.15s, 0.4s, 0.3s;
-  box-shadow: var(--shadow-lift);
-}
-
-[data-fx~='magnet'] {
-  translate: var(--tx, 0px) var(--ty, 0px);
-}
-.btn[data-fx~='magnet'] {
-  transition:
-    translate 0.5s var(--ease-out),
-    background 0.2s,
-    border-color 0.2s,
-    color 0.2s,
-    box-shadow 0.3s,
-    transform 0.2s;
-}
-.btn[data-fx~='magnet'].fx-hover {
-  transition-duration: 0.12s, 0.2s, 0.2s, 0.2s, 0.3s, 0.2s;
 }
 
 /* ---------- theme and language transitions (View Transitions API) ---------- */
@@ -227,265 +129,6 @@ html[data-vt='theme']::view-transition-new(root) {
 html[data-vt='lang']::view-transition-old(root),
 html[data-vt='lang']::view-transition-new(root) {
   animation-duration: 0.28s;
-}
-
-/* ---------- header: clear at the top, glass once scrolled ---------- */
-.site-header {
-  background: transparent;
-  border-bottom-color: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  transition:
-    background 0.3s,
-    border-color 0.3s,
-    box-shadow 0.3s;
-}
-.is-scrolled .site-header,
-.site-header.menu-open {
-  background: color-mix(in srgb, var(--bg) 74%, transparent);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  border-bottom-color: color-mix(in srgb, var(--border) 85%, transparent);
-  box-shadow: 0 12px 30px -22px rgba(0, 0, 0, 0.35);
-}
-.brand-mark {
-  position: relative;
-  overflow: hidden;
-  background: var(--fx-btn);
-  color: var(--on-accent);
-  font-weight: 800;
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--fx-1) 75%, transparent);
-  transition: transform 0.4s var(--ease-out);
-}
-.brand-mark::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
-  transform: translateX(-120%);
-  animation: fx-mark-shine 6s ease-in-out 1.2s infinite;
-}
-@keyframes fx-mark-shine {
-  0%,
-  70% {
-    transform: translateX(-120%);
-  }
-  85%,
-  100% {
-    transform: translateX(120%);
-  }
-}
-.brand:hover .brand-mark {
-  transform: rotate(-8deg) scale(1.07);
-}
-.brand-ai {
-  background: var(--fx-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.main-nav a {
-  position: relative;
-  transition: color 0.2s, background 0.2s;
-}
-.main-nav a::after {
-  content: '';
-  position: absolute;
-  left: 11px;
-  right: 11px;
-  bottom: 3px;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--fx-1), var(--fx-2));
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.35s var(--ease-out);
-}
-.main-nav a:hover,
-.main-nav a.active {
-  background: transparent;
-}
-.main-nav a:hover::after,
-.main-nav a.active::after {
-  transform: scaleX(1);
-}
-@media (max-width: 860px) {
-  .main-nav a::after {
-    right: auto;
-    width: 28px;
-    bottom: 4px;
-  }
-}
-
-/* ---------- buttons ---------- */
-.btn {
-  transition:
-    background 0.2s,
-    border-color 0.2s,
-    color 0.2s,
-    box-shadow 0.3s,
-    transform 0.2s;
-}
-.btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-.btn-primary {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  background: var(--fx-btn);
-  color: var(--on-accent);
-  box-shadow:
-    0 10px 24px -12px color-mix(in srgb, var(--fx-1) 85%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-.btn-primary:hover {
-  background: var(--fx-btn-hover);
-  color: var(--on-accent);
-  box-shadow:
-    0 14px 30px -12px color-mix(in srgb, var(--fx-2) 90%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-}
-.btn-primary::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
-  transform: translateX(-110%);
-  transition: transform 0.8s var(--ease-out);
-}
-.btn-primary:hover:not(:disabled)::after {
-  transform: translateX(110%);
-}
-.btn-primary:disabled {
-  box-shadow: none;
-}
-.btn-secondary {
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-.btn-secondary:hover {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-strong));
-}
-.btn > svg:last-child {
-  transition: transform 0.3s var(--ease-out);
-}
-.btn:hover > svg:last-child {
-  transform: translateX(3px);
-}
-.btn-lg {
-  min-height: 50px;
-  padding: 0 24px;
-  font-size: 1rem;
-  border-radius: 13px;
-}
-
-.card {
-  transition:
-    border-color 0.3s,
-    box-shadow 0.3s;
-}
-.icon-btn,
-.lang-switch {
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  transition: border-color 0.2s, background 0.2s;
-}
-.icon-btn:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
-}
-.lang-switch button {
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
-}
-.lang-switch button[aria-pressed='true'] {
-  background: var(--fx-btn);
-  color: var(--on-accent);
-  box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--fx-1) 80%, transparent);
-}
-
-/* ---------- forms: a glow on the field being typed in ---------- */
-.input:focus,
-.select:focus,
-.textarea:focus {
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent),
-    0 8px 24px -12px color-mix(in srgb, var(--fx-2) 60%, transparent);
-}
-.contact-layout .card:focus-within,
-.auth-wrap .card:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  box-shadow: var(--shadow-lift);
-}
-
-/* ---------- footer ---------- */
-.site-footer {
-  position: relative;
-  overflow: hidden;
-  padding: 0;
-  border-top: 0;
-}
-.site-footer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--fx-1), var(--fx-2), var(--fx-3), transparent);
-  opacity: 0.6;
-}
-.site-footer .footer-row {
-  padding-top: 30px;
-}
-.footer-mark {
-  margin-top: 22px;
-  font-size: clamp(3rem, 12.5vw, 10.5rem);
-  font-weight: 800;
-  letter-spacing: -0.055em;
-  line-height: 0.8;
-  text-align: center;
-  white-space: nowrap;
-  user-select: none;
-  background: var(--fx-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  opacity: 0.2;
-  translate: 0 10%;
-  -webkit-mask-image: linear-gradient(180deg, #000 25%, transparent 95%);
-  mask-image: linear-gradient(180deg, #000 25%, transparent 95%);
-}
-
-/* ---------- shared keyframes ---------- */
-@keyframes fx-ping {
-  75%,
-  100% {
-    transform: scale(2.6);
-    opacity: 0;
-  }
-}
-@keyframes fx-spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-@keyframes fx-shimmer {
-  to {
-    background-position: 200% center;
-  }
-}
-@keyframes fx-caret {
-  50% {
-    opacity: 0;
-  }
-}
-
-/* ---------- dashboard touches ---------- */
-.progress-fill {
-  background: linear-gradient(90deg, var(--fx-1), var(--fx-2));
-  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--fx-2) 60%, transparent);
 }
 
 /* ---------- less motion ---------- */
@@ -501,5 +144,8 @@ html[data-vt='lang']::view-transition-new(root) {
   .reveal:not(.is-visible),
   .reveal-group:not(.is-visible) > * {
     opacity: 1;
+  }
+  .route-fade::before {
+    display: none;
   }
 }

@@ -3,6 +3,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# pixel-font subset, regenerated on every build / dev start
+src/assets/generated/
+
 # environment files (keep the example)
 .env
 .env.*

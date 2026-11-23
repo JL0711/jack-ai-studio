@@ -2,23 +2,25 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ShowcaseBadge } from '../components/Badges';
 import { BridgeDiagram } from '../components/BridgeDiagram';
-import { CoverArt } from '../components/fx/CoverArt';
-import { ArrowLeftIcon, CheckIcon, ExpandIcon } from '../components/Icons';
+import { Monitor, pad } from '../components/fx/ChannelMonitor';
+import { hasScene } from '../components/fx/Scenes';
+import { Scramble } from '../components/fx/Scramble';
+import { ArrowLeftIcon, ArrowRightIcon, ExpandIcon } from '../components/Icons';
 import { Lightbox } from '../components/Lightbox';
-import { findShowcaseProject } from '../data/projects';
+import { SHOWCASE_PROJECTS, findShowcaseProject } from '../data/projects';
 import { useI18n } from '../i18n/I18nProvider';
 import { assetUrl } from '../lib/format';
-import { groupClass, revealClass, useInView } from '../lib/motion';
+import { groupClass, revealClass, useInView, useOnScreen } from '../lib/motion';
 
 export default function ShowcaseDetail() {
   const { slug } = useParams();
   const { t, pick } = useI18n();
   const project = findShowcaseProject(slug);
   const [open, setOpen] = useState<number | null>(null);
-  const highlights = useInView<HTMLElement>();
+  const highlights = useInView<HTMLOListElement>();
   const gallery = useInView<HTMLDivElement>();
   const extra = useInView<HTMLElement>();
-  const cta = useInView<HTMLElement>();
+  const screen = useOnScreen<HTMLDivElement>();
 
   if (!project) {
     return (
@@ -33,88 +35,149 @@ export default function ShowcaseDetail() {
     );
   }
 
+  const index = SHOWCASE_PROJECTS.indexOf(project);
+  const next = SHOWCASE_PROJECTS[(index + 1) % SHOWCASE_PROJECTS.length];
   const images = (project.images ?? []).map((img) => ({ src: assetUrl(pick(img.src)), alt: pick(img.alt) }));
 
   return (
     <div className="page detail-page">
-      <div className="container narrow">
+      <div className="container wide">
         <Link to="/showcase" className="back-link">
           <ArrowLeftIcon /> {t('showcase.back')}
         </Link>
-        <header className="page-head detail-hero">
-          <div className="detail-head">
-            <ShowcaseBadge status={project.status} />
-            {project.kind && <span className="kind">{pick(project.kind)}</span>}
-          </div>
-          <h1>{pick(project.title)}</h1>
-          <p className="detail-summary">{pick(project.summary)}</p>
-          <ul className="tags">
-            {project.stack.map((s) => (
-              <li key={s} className="tag">
-                {s}
-              </li>
-            ))}
-          </ul>
-        </header>
+        <div className="detail-top">
+          <header className="detail-hero">
+            <span className="kicker">
+              <b>CH {pad(index + 1)}</b>
+              <span aria-hidden="true">//</span>
+              {project.slug}
+            </span>
+            <div className="detail-head">
+              <ShowcaseBadge status={project.status} />
+              {project.kind && <span className="monitor-kind">{pick(project.kind)}</span>}
+            </div>
+            <h1>
+              <Scramble text={pick(project.title)} trigger={project.slug} />
+            </h1>
+            <p className="detail-summary">{pick(project.summary)}</p>
+            <dl className="detail-spec">
+              <div>
+                <dt>{t('showcase.stack')}</dt>
+                <dd>
+                  <ul className="tags">
+                    {project.stack.map((s) => (
+                      <li key={s} className="tag">
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            </dl>
+          </header>
 
-        <div className="detail-layout">
-          {project.art && !project.images?.length && (
-            <div className="card art-banner" role="img" aria-label={t('showcase.illustration')}>
-              <CoverArt art={project.art} />
+          {hasScene(project.slug) && (
+            <div ref={screen.ref} className="detail-monitor" role="img" aria-label={t('showcase.illustration')}>
+              <Monitor project={project} index={index} playing={screen.onScreen} foot={false} />
             </div>
           )}
+        </div>
 
-          <section ref={highlights.ref} className={revealClass(highlights.inView, 'card')} data-fx="spot">
-            <h2>{t('showcase.highlights')}</h2>
-            <ul className={groupClass(highlights.inView, 'highlights')}>
-              {pick(project.highlights).map((h) => (
+        <div className="detail-layout">
+          <section className="detail-section">
+            <h2 className="detail-h2">
+              <span className="kicker">
+                <b>A</b>
+                <span aria-hidden="true">//</span>
+              </span>
+              {t('showcase.highlights')}
+            </h2>
+            <ol ref={highlights.ref} className={groupClass(highlights.inView, 'log-list')}>
+              {pick(project.highlights).map((h, i) => (
                 <li key={h}>
-                  <span className="check" aria-hidden="true">
-                    <CheckIcon />
+                  <span className="log-idx" aria-hidden="true">
+                    {pad(i + 1)}
                   </span>
                   <span>{h}</span>
                 </li>
               ))}
-            </ul>
+            </ol>
           </section>
 
           {project.diagram === 'bridge' && (
-            <section ref={extra.ref} className={revealClass(extra.inView, 'card')}>
-              <h2>{t('showcase.diagram')}</h2>
-              <BridgeDiagram />
-              <p className="muted small" style={{ margin: '10px 0 0' }}>
+            <section ref={extra.ref} className={revealClass(extra.inView, 'detail-section')}>
+              <h2 className="detail-h2">
+                <span className="kicker">
+                  <b>B</b>
+                  <span aria-hidden="true">//</span>
+                </span>
+                {t('showcase.diagram')}
+              </h2>
+              <div className="diagram-frame ticks">
+                <BridgeDiagram />
+              </div>
+              <p className="muted small" style={{ margin: '12px 0 0' }}>
                 {t('bridge.caption')}
               </p>
             </section>
           )}
 
           {images.length > 0 && (
-            <section>
-              <h2>{t('showcase.images')}</h2>
+            <section className="detail-section">
+              <h2 className="detail-h2">
+                <span className="kicker">
+                  <b>B</b>
+                  <span aria-hidden="true">//</span>
+                </span>
+                {t('showcase.images')}
+              </h2>
               <div ref={gallery.ref} className={groupClass(gallery.inView, 'gallery')}>
                 {images.map((img, i) => (
-                  <figure key={project.images?.[i].src.en} data-fx="spot">
+                  <figure key={project.images?.[i].src.en} className="ticks">
                     <button type="button" className="gallery-open" onClick={() => setOpen(i)} title={t('showcase.enlarge')}>
                       <img src={img.src} alt={img.alt} loading="lazy" width={1600} height={1200} />
                       <span className="gallery-zoom" aria-hidden="true">
                         <ExpandIcon />
                       </span>
                     </button>
-                    <figcaption>{img.alt}</figcaption>
+                    <figcaption>
+                      <span className="log-idx" aria-hidden="true">
+                        IMG {pad(i + 1)}
+                      </span>
+                      {img.alt}
+                    </figcaption>
                   </figure>
                 ))}
               </div>
             </section>
           )}
+        </div>
 
-          <section ref={cta.ref} className={revealClass(cta.inView, 'cta-band')}>
-            <h2>{t('showcase.ctaTitle')}</h2>
+        <div className="detail-next">
+          <section className="cta-term ticks">
+            <h2 className="cta-title">
+              <span className="cta-prompt" aria-hidden="true">
+                ›
+              </span>
+              {t('showcase.ctaTitle')}
+              <span className="cta-caret" aria-hidden="true" />
+            </h2>
             <div className="row">
-              <Link to="/contact" className="btn btn-primary btn-lg" data-fx="magnet">
+              <Link to="/contact" className="btn btn-primary btn-lg">
                 {t('showcase.ctaBtn')}
+                <ArrowRightIcon />
               </Link>
             </div>
           </section>
+          <Link to={`/showcase/${next.slug}`} className="next-link ticks">
+            <span className="kicker">
+              <b>{t('showcase.next')}</b>
+              <span aria-hidden="true">//</span>
+              CH {pad(SHOWCASE_PROJECTS.indexOf(next) + 1)}
+            </span>
+            <span className="next-title">{pick(next.title)}</span>
+            <ArrowRightIcon />
+          </Link>
         </div>
       </div>
       {open !== null && images.length > 0 && (

@@ -9,3 +9,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Short commit hash of this build (set in vite.config.ts). */
+declare const __BUILD_SHA__: string;
+/** Build date, YYYY-MM-DD (set in vite.config.ts). */
+declare const __BUILD_DATE__: string;
