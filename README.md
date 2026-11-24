@@ -27,7 +27,10 @@ studio-site/
 ├─ .github/workflows/deploy.yml  推送到 main 自动部署到 GitHub Pages
 ├─ fonts/fusion-pixel/          像素字体原文件和许可证（OFL），构建时自动裁成子集
 ├─ scripts/vite-plugins.mjs     构建插件：裁剪像素字体、页脚上的构建版本号
+├─ scripts/og-card.html         链接预览图的模板（改完按文件开头的命令重新生成 public/og.png）
 ├─ public/portfolio/            展览馆截图
+├─ public/og.png                分享链接时显示的预览图（1200×630）
+├─ public/404.html              把没有 # 的地址（如 /jack-ai-studio/showcase）转到站内对应页面
 ├─ supabase/
 │  ├─ schema.sql                在 Supabase SQL Editor 里运行的完整数据库脚本（新项目用这个）
 │  ├─ migrations/
@@ -40,8 +43,8 @@ studio-site/
    ├─ data/projects.ts          ← 展览馆项目（改这里）
    ├─ i18n/strings.ts           ← 所有界面文字（中文 + 英文）
    ├─ lib/permissions.ts        角色权限判断
-   ├─ store/                    数据层：demoStore（演示）/ supabaseStore（正式）
-   ├─ pages/                    各个页面
+   ├─ store/                    数据层：demoStore（演示）/ supabaseStore（正式，supabase-js 用到时才下载）
+   ├─ pages/                    各个页面（登录、重设密码和 dashboard/ 是单独的文件，打开时才下载）
    ├─ components/fx/            动画：首页的 ASCII 显卡（WebGL）、作品频道、项目示意动画、读数等
    ├─ styles/                   tokens.css 是颜色和字体，其余按用途分文件
    └─ __tests__/                Vitest 单元测试
@@ -54,6 +57,10 @@ studio-site/
 - 像素字体完整文件约 700 KB，`npm run dev` / `npm run build` 时会自动扫描 `src/` 里用到的字，裁成约 20 KB 的子集（生成在 `src/assets/generated/`，不提交）。新加的文字下次启动或构建时自动带上。
 - 像素字体只在 12px 或 24px 时清晰，用 `var(--pixel)` 时请保持这两个字号。
 - 首页的显卡是实时渲染的：WebGL2 光线步进出显卡的形状，再换成字符画；鼠标移上去风扇会加速，鼠标下的字符会被「解码」。不支持 WebGL2 的浏览器会直接不显示这张图。
+  - 宽度 1200px 以上，显卡在右半边，不压住文字；1200px 以下移到文字下面；**手机（720px 以下）不显示**：手机上字符画只有四十几个字宽，标签也放不下，看起来就是一堆乱码，而且很耗电。
+  - 靠右边的标签放不下时会自动改成朝左。
+- 标题的「解码」效果（随机字符一个个变成正确文字）**只在有鼠标的宽屏电脑上播放**。手机、平板和设置了「减少动态效果」的访客直接看到文字：手机上这个效果会被当成乱码，而且手机加载慢时会拖到两三秒。中文位置解码时用全角符号（＃＊＋…），不用随机汉字，免得读起来像乱码。`src/__tests__/scramble.test.ts` 会检查这两点。
+- 文字颜色分三档：`--text`、`--text-muted`、`--text-dim`（小标签，在所有底色上对比度都在 4.5:1 以上），另有只用于装饰的 `--text-faint`（标题第二行、分隔斜杠、熄灭的指示灯）。
 - 「作品」区每个项目都有一段示意动画（`components/fx/Scenes.tsx`），页面上标明了「示意动画」，真实截图在项目详情页里。
 - 系统设置了「减少动态效果」的访客，所有动画都会停在完成状态。
 
@@ -72,6 +79,13 @@ npm run build      # 类型检查 + 打包到 dist/
 ```
 
 想在本地连真实的 Supabase：复制 `.env.example` 为 `.env.local`，填上项目 URL 和 publishable key，再 `npm run dev`。`.env.local` 已在 `.gitignore` 里，不会被提交。
+
+### 加载了什么
+
+- 打开首页只下载网站自己的代码和 React（约 105 KB，gzip 后）。
+- supabase-js（约 60 KB）**用到时才下载**：浏览器里存着登录记录（老用户）、从邮件链接回来、点「登录」、提交联系表单。第一次来的访客完全不下载它，也不会连 Supabase。逻辑在 `src/lib/supabase.ts` 和 `src/store/lazySupabaseStore.ts`。
+- 登录、重设密码和「我的项目」是单独的文件，打开时才下载（页面空闲几秒后会提前悄悄下载登录页，点的时候是秒开的；省流量模式下不提前下载）。
+- React 和 supabase-js 各自是单独的文件，网站更新时文件名不变，回访的人不用重新下载。
 
 ### 环境变量
 
@@ -185,6 +199,9 @@ python3 -m venv .venv-rls        # pgserver 只支持 Python 3.9–3.12
 
 ## 其他说明
 
-- 回复时间写的是「北京时间每天 9–15 点 / 太平洋时间 6pm–12am」，这对应美国夏令时。冬令时（11 月到次年 3 月）北京 9–15 点对应太平洋时间 5pm–11pm，需要的话在 `src/i18n/strings.ts` 里改 `home.hours` / `home.hoursAlt`。
+- 回复时间：加州时间每天上午 9 点到次日凌晨 1 点，2 小时内回复。对应北京时间凌晨 1 点到下午 5 点（美国夏令时期间是 0 点到下午 4 点）。首页和联系页的时间条、页头的「回复时段 / 非回复时段」按当前时间自动计算。文字在 `src/i18n/strings.ts` 的 `home.hours` / `home.hoursAlt`。
 - 网站不加载任何境外字体或第三方脚本（Google Fonts 在国内打不开），用系统自带的中文字体。
-- 路由用的是 HashRouter（地址形如 `/#/showcase`），因为 GitHub Pages 没有单页应用的回退机制。
+- 路由用的是 HashRouter（地址形如 `/#/showcase`），因为 GitHub Pages 没有单页应用的回退机制。有人输入没有 `#` 的地址（比如 `/jack-ai-studio/showcase`）时，`public/404.html` 会把他转到 `/#/showcase`。
+- 每个页面会设置自己的标签页标题（如「展览馆 · Jack AI Studio」、项目名），跟随语言。
+- **链接预览**：`index.html` 里的 `og:*` / `twitter:*` 标签和 `public/og.png`，在 Upwork、LinkedIn、iMessage、Slack 等地方分享链接时显示。这些标签里的网址写的是 `https://jl0711.github.io/jack-ai-studio/`，以后换成自己的域名时要一起改（`404.html` 会自动识别域名，不用改）。微信里的链接卡片不一定用这张图（自定义微信分享卡片需要公众号的 JS-SDK）。
+- 图标：`public/favicon.svg`（浏览器标签）和 `public/apple-touch-icon.png`（iPhone 添加到主屏幕）。

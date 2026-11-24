@@ -10,7 +10,9 @@
   --surface-2: #181b20;
   --text: #ece9e2;
   --text-muted: #9c9ea3;
-  --text-dim: #6a6d74;
+  /* dim: small labels, kept at 4.5:1 or more on every surface; faint: decoration only */
+  --text-dim: #7f838a;
+  --text-faint: #6a6d74;
   --border: #23272e;
   --border-strong: #363c45;
   --grid-dot: rgba(236, 233, 226, 0.075);
@@ -72,7 +74,8 @@
   --surface-2: #f0eee8;
   --text: #141414;
   --text-muted: #56544e;
-  --text-dim: #8a877f;
+  --text-dim: #68655e;
+  --text-faint: #8a877f;
   --border: #d6d2c8;
   --border-strong: #b8b3a6;
   --grid-dot: rgba(20, 20, 20, 0.1);
@@ -118,7 +121,8 @@
     --surface-2: #f0eee8;
     --text: #141414;
     --text-muted: #56544e;
-    --text-dim: #8a877f;
+    --text-dim: #68655e;
+    --text-faint: #8a877f;
     --border: #d6d2c8;
     --border-strong: #b8b3a6;
     --grid-dot: rgba(20, 20, 20, 0.1);

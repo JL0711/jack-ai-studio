@@ -685,7 +685,7 @@
   box-shadow: inset 2px 0 0 var(--signal);
 }
 .sc-row.is-done .sc-cell {
-  background: var(--text-dim);
+  background: var(--text-faint);
 }
 .sc-row.is-bad {
   background: var(--danger-bg);

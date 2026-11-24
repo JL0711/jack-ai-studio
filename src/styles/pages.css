@@ -175,7 +175,7 @@
   display: block;
 }
 .hero-line.is-dim {
-  color: var(--text-dim);
+  color: var(--text-faint);
 }
 .hero-lede {
   max-width: 54ch;
@@ -437,7 +437,7 @@
   font-family: var(--font-display);
   font-weight: 300;
   font-size: 0.78em;
-  color: var(--text-dim);
+  color: var(--text-faint);
   text-shadow: none;
   padding: 0 0.04em;
 }

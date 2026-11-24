@@ -23,7 +23,7 @@
   --led: var(--demo);
 }
 .led.is-off {
-  --led: var(--text-dim);
+  --led: var(--text-faint);
   box-shadow: none;
 }
 @keyframes led-blink {
@@ -153,7 +153,7 @@
 }
 .brand-text i {
   font-style: normal;
-  color: var(--text-dim);
+  color: var(--text-faint);
   margin: 0 0.18em;
   font-weight: 400;
 }
