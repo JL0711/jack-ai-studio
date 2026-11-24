@@ -438,13 +438,30 @@
     opacity: 0;
   }
 }
+/* Phone-sized screens: there is no height for a second row, so the two machines stay
+   side by side with bare wires between them (the footer still names the output). */
 @container (max-width: 470px) {
   .sc-bridge-body {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.6fr) minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
   }
   .sc-lanes {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    gap: 22px;
+  }
+  .sc-lane-label {
+    display: none;
+  }
+  .sc-dev-title {
+    padding: 6px 8px;
+  }
+  .sc-dev-screen {
+    min-height: 0;
+    gap: 6px;
+    padding: 8px;
+  }
+  .sc-dev-screen .sc-line:nth-of-type(n + 5) {
+    display: none;
   }
 }
 
@@ -509,6 +526,29 @@
 }
 .sc-suggest-label {
   color: var(--accent);
+}
+/* Phone-sized screens: without this the waveform gets squeezed to a dashed line
+   and the transcript runs into the top bar. */
+@container (max-width: 470px) {
+  .sc-wave {
+    padding: 8px 12px;
+    min-height: 28px;
+  }
+  .sc-transcript {
+    gap: 7px;
+    padding: 0 12px;
+  }
+  .sc-transcript p:nth-child(3) {
+    display: none;
+  }
+  .sc-suggest {
+    gap: 6px;
+    margin: 8px 12px 10px;
+    padding: 8px 10px;
+  }
+  .sc-suggest .sc-line:last-child {
+    display: none;
+  }
 }
 
 /* ── 5. Word annotations ── */

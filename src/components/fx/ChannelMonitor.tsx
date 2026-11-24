@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SHOWCASE_PROJECTS, type ShowcaseProject, type ShowcaseStatus } from '../../data/projects';
 import { useI18n } from '../../i18n/I18nProvider';
-import { prefersReducedMotion, useOnScreen } from '../../lib/motion';
+import { prefersReducedMotion, useMedia, useOnScreen } from '../../lib/motion';
 import { ArrowRightIcon } from '../Icons';
 import { ProjectScene } from './Scenes';
 import { Scramble } from './Scramble';
@@ -16,19 +16,6 @@ export const LED_FOR: Record<ShowcaseStatus, string> = {
 };
 
 const DESKTOP = '(min-width: 980px)';
-
-function useMedia(query: string): boolean {
-  const [match, setMatch] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia?.(query);
-    if (!mq) return;
-    const on = () => setMatch(mq.matches);
-    on();
-    mq.addEventListener?.('change', on);
-    return () => mq.removeEventListener?.('change', on);
-  }, [query]);
-  return match;
-}
 
 /** The framed "monitor": channel header, the project's scene, and its facts. */
 export function Monitor({

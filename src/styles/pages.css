@@ -125,7 +125,8 @@
   top: 0;
   bottom: 0;
   right: 0;
-  width: min(60%, 1040px);
+  /* The right half only: the card is centred in it, clear of the headline and the intro. */
+  width: min(50%, 1040px);
   /* Fade the left edge so the text stays readable where they meet. */
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22%);
   mask-image: linear-gradient(to right, transparent 0, #000 22%);
@@ -297,6 +298,13 @@
 .ascii-gpu.is-booted .ascii-label-line {
   width: 46px;
 }
+/* Near the right edge a callout points left instead (set in AsciiGpu.tsx). */
+.ascii-label.is-flipped {
+  flex-direction: row-reverse;
+}
+.ascii-label.is-flipped .ascii-label-mark {
+  margin: 0 -4.5px 0 0;
+}
 .ascii-label-text {
   font-family: var(--pixel);
   font-size: 12px;
@@ -319,7 +327,8 @@
   text-align: right;
 }
 
-@media (max-width: 980px) {
+/* Below 1200px the headline needs most of the width, so the card moves under the text. */
+@media (max-width: 1199px) {
   .hero {
     padding-top: 36px;
     justify-content: flex-start;
@@ -345,8 +354,10 @@
   }
 }
 @media (max-width: 720px) {
-  .ascii-label {
-    display: none;
+  /* Phones have no card under the text (Home.tsx), so the hero is only as tall as its text. */
+  .hero {
+    min-height: 0;
+    padding-bottom: 48px;
   }
   .hero-specs {
     grid-template-columns: 1fr;

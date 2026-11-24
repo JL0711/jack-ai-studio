@@ -10,6 +10,29 @@ export function hasFinePointer(): boolean {
   return typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
 }
 
+/**
+ * True only with a mouse or trackpad on a wide screen (and motion allowed). The text
+ * "decode" effect runs only there: on a phone the random characters read as garbled
+ * text (乱码), and a phone that is still busy loading stretches the effect to seconds.
+ */
+export function allowsTextScramble(): boolean {
+  return !prefersReducedMotion() && hasFinePointer() && !!window.matchMedia?.('(min-width: 980px)').matches;
+}
+
+/** Tracks a CSS media query. */
+export function useMedia(query: string): boolean {
+  const [match, setMatch] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.(query);
+    if (!mq) return;
+    const on = () => setMatch(mq.matches);
+    on();
+    mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, [query]);
+  return match;
+}
+
 export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(prefersReducedMotion);
   useEffect(() => {

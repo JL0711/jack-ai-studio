@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { prefersReducedMotion } from '../../lib/motion';
+import { allowsTextScramble } from '../../lib/motion';
 
 const LATIN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+=<>/';
-const CJK = '数据模型本地检索生成文档网页脚本自动化部署测试代码终端信号';
+// Chinese positions get full-width symbols, never real characters: random Chinese
+// characters read as garbled text (乱码), not as a decoding effect. Full-width keeps
+// every character the same width, so the line doesn't shift while it decodes.
+const CJK = '＃＊＋＝％＆／＜＞＠～';
 const isCjk = (ch: string) => /[㐀-鿿豈-﫿]/.test(ch);
 
-function randomFor(ch: string): string {
+/** The stand-in shown for one character while it is still "encoded". Exported for tests. */
+export function randomFor(ch: string): string {
   if (/\s/.test(ch) || /[，。、：；！？,.:;!?·—\-()（）]/.test(ch)) return ch;
   const pool = isCjk(ch) ? CJK : LATIN;
   return pool[Math.floor(Math.random() * pool.length)];
@@ -15,7 +19,8 @@ function randomFor(ch: string): string {
  * Text that "decodes" from random characters into the real text, left to right.
  * Starts when it scrolls into view (or when `trigger` changes). The final text
  * keeps its place in the layout the whole time, so nothing around it jumps.
- * Screen readers and reduced-motion visitors get the plain text.
+ * Only on a wide screen with a mouse (see allowsTextScramble): phones, screen
+ * readers and reduced-motion visitors get the plain text.
  */
 export function Scramble({
   text,
@@ -37,10 +42,8 @@ export function Scramble({
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
-      setSeen(true);
-      return;
-    }
+    // No effect at all: `seen` stays false, so only the plain text is ever shown.
+    if (!el || !allowsTextScramble() || typeof IntersectionObserver === 'undefined') return;
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -55,7 +58,7 @@ export function Scramble({
   }, []);
 
   useEffect(() => {
-    if (!seen || prefersReducedMotion()) {
+    if (!seen || !allowsTextScramble()) {
       setShown(null);
       return;
     }

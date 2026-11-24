@@ -10,6 +10,7 @@ import { ArrowRightIcon } from '../components/Icons';
 import { SHOWCASE_PROJECTS } from '../data/projects';
 import { useI18n } from '../i18n/I18nProvider';
 import type { StringKey } from '../i18n/strings';
+import { useMedia } from '../lib/motion';
 import { BEIJING, PACIFIC, hhmm, isReplyOpen, pad2, useNow, zoneTime } from '../lib/replyHours';
 
 const SERVICES: { key: 'web' | 'rag' | 'local' | 'auto' | 'bilingual'; tags: string[] }[] = [
@@ -63,6 +64,10 @@ function HeroHud() {
 
 export default function Home() {
   const { t, lang } = useI18n();
+  // On a phone the card is only ~45 characters wide, with no room for its callouts:
+  // it reads as a pile of random symbols, so phones skip it (and save the battery).
+  const showGpu = useMedia('(min-width: 721px)');
+  const mouse = useMedia('(hover: hover) and (pointer: fine)');
 
   const labels: AsciiLabel[] = [
     { text: t('hero.label.gpu'), at: [-0.35, 0.58, 0.03] },
@@ -73,9 +78,14 @@ export default function Home() {
   return (
     <>
       <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-figure">
-          <AsciiGpu labels={labels} caption={t('hero.caption')} />
-        </div>
+        {showGpu && (
+          <div className="hero-figure">
+            <AsciiGpu
+              labels={labels}
+              caption={mouse ? t('hero.caption') + (lang === 'zh' ? '' : ' ') + t('hero.captionHint') : t('hero.caption')}
+            />
+          </div>
+        )}
         <div className="container wide hero-inner">
           <HeroHud />
           <h1 id="hero-title" className="hero-title">

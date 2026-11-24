@@ -103,7 +103,8 @@ const zh = {
   'hero.title2': '和真正上线的软件。',
   'hero.lede':
     '我是 Jack，美国加州的独立开发者。本地私有化 AI 部署、带出处的文档问答、Web 应用和自动化脚本，从书面需求到部署交付都由我一个人负责。本地模型跑在一台 RTX 5070 Ti 工作站上，需要保密的资料不必经过云端 API。',
-  'hero.caption': 'FIG.01 跑本地模型的那张显卡，用字符实时渲染（WebGL）。把鼠标移上去试试。',
+  'hero.caption': 'FIG.01 跑本地模型的那张显卡，用字符实时渲染（WebGL）。',
+  'hero.captionHint': '把鼠标移上去试试。',
   'hero.label.gpu': 'RTX 5070 Ti · 16 GB',
   'hero.label.models': '本地模型 qwen3:14b · bge-m3',
   'hero.label.cloud': '云端 API 调用：0',
@@ -531,7 +532,8 @@ const en: Record<StringKey, string> = {
   'hero.title2': 'and software that actually ships.',
   'hero.lede':
     'I’m Jack, an independent developer in California. I build private local AI, document Q&A that cites its sources, web apps and automation scripts, and I handle everything from the written brief to deployment. My local models run on an RTX 5070 Ti workstation, so confidential files never have to pass through a cloud API.',
-  'hero.caption': 'FIG.01 The graphics card my local models run on, drawn live in characters (WebGL). Move your mouse over it.',
+  'hero.caption': 'FIG.01 The graphics card my local models run on, drawn live in characters (WebGL).',
+  'hero.captionHint': 'Move your mouse over it.',
   'hero.label.gpu': 'RTX 5070 Ti · 16 GB',
   'hero.label.models': 'Local models: qwen3:14b · bge-m3',
   'hero.label.cloud': 'Cloud API calls: 0',

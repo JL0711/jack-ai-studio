@@ -426,6 +426,7 @@ export function AsciiGpu({ labels = [], caption }: { labels?: AsciiLabel[]; capt
     };
 
     const state = { yaw: -0.74, pitch: 0.36, fanSpeed: 2.6, fan: 0, lensX: -999, lensY: -999 };
+    const flipped: boolean[] = [];
     let start = 0;
     let last = 0;
 
@@ -512,12 +513,20 @@ export function AsciiGpu({ labels = [], caption }: { labels?: AsciiLabel[]; capt
       gl.uniform1f(A.scan, reduced ? -99 : sweep - rows * 0.3);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-      // Callouts follow their points.
+      // Callouts follow their points. One that would run off the right edge
+      // flips to the left of its point instead of being cut off.
       labels.forEach((label, i) => {
         const el = labelRefs.current[i];
         if (!el) return;
         const pt = project(label.at, zoom);
-        el.style.transform = `translate3d(${pt.x.toFixed(1)}px, ${pt.y.toFixed(1)}px, 0)`;
+        const w = el.offsetWidth;
+        const flip = pt.x + w > cssW - 6;
+        if (flip !== !!flipped[i]) {
+          flipped[i] = flip;
+          el.classList.toggle('is-flipped', flip);
+        }
+        const x = flip ? pt.x - w : pt.x;
+        el.style.transform = `translate3d(${x.toFixed(1)}px, ${pt.y.toFixed(1)}px, 0)`;
       });
     };
 
