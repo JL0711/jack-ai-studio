@@ -68,6 +68,12 @@ export default function Login() {
         setError(t('auth.notConfirmed'));
       } else if (/already (been )?registered|already exists/i.test(msg)) {
         setError(t('auth.alreadyRegistered'));
+      } else if (/invalid login credentials|invalid (email or )?password/i.test(msg)) {
+        setError(t('auth.errCredentials'));
+      } else if (/rate limit|too many|only request this after|security purposes/i.test(msg)) {
+        setError(t('auth.errRateLimit'));
+      } else if (/failed to fetch|networkerror|load failed|network request failed|dynamically imported module|importing a module script failed/i.test(msg)) {
+        setError(t('auth.errNetwork'));
       } else {
         setError(msg);
       }

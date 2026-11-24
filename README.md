@@ -86,6 +86,9 @@ npm run build      # 类型检查 + 打包到 dist/
 - supabase-js（约 60 KB）**用到时才下载**：浏览器里存着登录记录（老用户）、从邮件链接回来、点「登录」、提交联系表单。第一次来的访客完全不下载它，也不会连 Supabase。逻辑在 `src/lib/supabase.ts` 和 `src/store/lazySupabaseStore.ts`。
 - 登录、重设密码和「我的项目」是单独的文件，打开时才下载（页面空闲几秒后会提前悄悄下载登录页，点的时候是秒开的；省流量模式下不提前下载）。
 - React 和 supabase-js 各自是单独的文件，网站更新时文件名不变，回访的人不用重新下载。
+- 像素字体（约 22 KB）在 `index.html` 里预加载（`scripts/vite-plugins.mjs` 的 `preloadFonts`），否则它晚到时首屏顶部那行状态会从两行变一行，整页往上跳。
+- 首屏以下的区块用了 `content-visibility: auto`，滑到附近才排版。
+- **网站更新时正开着的页面**：更新会删掉旧文件，这时再点「登录」等按需加载的页面会找不到文件。网站会自动刷新一次（`src/lib/chunkErrors.ts`，一分钟内最多一次，防止死循环）；还是不行就显示「这个页面没能打开」和刷新按钮（`src/components/RouteErrorBoundary.tsx`），不会白屏。
 
 ### 环境变量
 

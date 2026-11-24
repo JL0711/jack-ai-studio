@@ -6,20 +6,8 @@ import { DemoBanner } from './DemoBanner';
 import { Footer } from './Footer';
 import { GlobalFx } from './fx/GlobalFx';
 import { Header } from './Header';
-
-/** Shown for the moment it takes to fetch a page that is loaded on demand (see App.tsx). */
-export function RouteLoading() {
-  const { t } = useI18n();
-  return (
-    <div className="page">
-      <div className="container">
-        <p className="muted route-loading" role="status">
-          {t('common.loading')}
-        </p>
-      </div>
-    </div>
-  );
-}
+import { RouteErrorBoundary } from './RouteErrorBoundary';
+import { RouteLoading } from './RouteLoading';
 
 /** Fetches the on-demand pages in the background once the page has settled,
  *  so the login link (and, when signed in, the dashboard) open instantly. */
@@ -66,9 +54,11 @@ export function Layout() {
       <Header />
       <main id="main" tabIndex={-1}>
         <div key={routeKey} className={navigated.current ? 'route-fade' : undefined}>
-          <Suspense fallback={<RouteLoading />}>
-            <Outlet />
-          </Suspense>
+          <RouteErrorBoundary>
+            <Suspense fallback={<RouteLoading />}>
+              <Outlet />
+            </Suspense>
+          </RouteErrorBoundary>
         </div>
       </main>
       <Footer />
