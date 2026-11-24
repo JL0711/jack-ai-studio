@@ -376,6 +376,33 @@
     height: 32px;
   }
 }
+/* 320–359px phones (older iPhone SE, small Androids): tighter still, so the
+   tools don't drop to a second line under the logo. */
+@media (max-width: 359px) {
+  .site-header .bar {
+    gap: 10px;
+  }
+  .brand {
+    gap: 7px;
+  }
+  .brand-text {
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+  }
+  .brand-text i {
+    margin: 0 0.1em;
+  }
+  .header-tools {
+    gap: 4px;
+  }
+  .header-tools .icon-btn {
+    min-width: 30px;
+    padding: 0 6px;
+  }
+  .lang-switch button {
+    padding: 0 5px;
+  }
+}
 
 /* ---------- footer ---------- */
 .site-footer {
@@ -876,6 +903,16 @@
   color: var(--text);
   border-bottom-color: var(--signal);
   font-weight: 600;
+}
+/* Phones up to ~380px wide: "Log in · Sign up · Forgot password" fits without a hidden scroll. */
+@media (max-width: 380px) {
+  .tabs {
+    gap: 0;
+  }
+  .tabs button {
+    padding: 10px 8px;
+    font-size: 0.9rem;
+  }
 }
 
 /* ---------- lists: milestones, timeline, comments ---------- */
