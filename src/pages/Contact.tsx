@@ -7,6 +7,7 @@ import type { StringKey } from '../i18n/strings';
 import { errorMessage } from '../lib/format';
 import { BEIJING, PACIFIC, hhmm, isReplyOpen, useNow, zoneTime } from '../lib/replyHours';
 import type { ContactInput } from '../lib/types';
+import { useDocumentTitle } from '../lib/useDocumentTitle';
 import {
   BUDGETS,
   LIMITS,
@@ -52,6 +53,7 @@ const FIELD_LIMITS: Partial<Record<ContactField, { min: number; max: number }>> 
 
 export default function Contact() {
   const { t } = useI18n();
+  useDocumentTitle(t('contact.title'));
   const { demo } = useAuth();
   const [form, setForm] = useState<ContactInput>(EMPTY);
   const [honeypot, setHoneypot] = useState('');

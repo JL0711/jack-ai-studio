@@ -1262,6 +1262,26 @@
   background: var(--text);
   color: var(--bg);
 }
+/* Phones: a 2 × 2 grid instead of three buttons and one stray on a second line. */
+@media (max-width: 560px) {
+  .filter-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .filter-bar button {
+    justify-content: space-between;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .filter-bar button:nth-child(odd) {
+    border-right: 1px solid var(--border-strong);
+  }
+  .filter-bar button:nth-last-child(-n + 2):nth-child(odd),
+  .filter-bar button:last-child {
+    border-bottom: 0;
+  }
+}
 .filter-count {
   font-family: var(--pixel);
   font-size: 12px;

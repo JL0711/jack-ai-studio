@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18nProvider';
+import { useDocumentTitle } from '../lib/useDocumentTitle';
 
 export default function NotFound() {
   const { t } = useI18n();
+  useDocumentTitle(t('nf.title'));
   return (
     <div className="page">
       <div className="container narrow">

@@ -7,6 +7,7 @@ import { ArrowRightIcon } from '../components/Icons';
 import { SHOWCASE_PROJECTS, type ShowcaseProject, type ShowcaseStatus } from '../data/projects';
 import { useI18n } from '../i18n/I18nProvider';
 import { hasFinePointer, useOnScreen } from '../lib/motion';
+import { useDocumentTitle } from '../lib/useDocumentTitle';
 
 function ProjectTile({ project, index }: { project: ShowcaseProject; index: number }) {
   const { t, pick } = useI18n();
@@ -61,6 +62,7 @@ const FILTERS: ('all' | ShowcaseStatus)[] = ['all', 'live', 'in_progress', 'demo
 
 export default function Showcase() {
   const { t } = useI18n();
+  useDocumentTitle(t('showcase.title'));
   const [filter, setFilter] = useState<'all' | ShowcaseStatus>('all');
   const shown = SHOWCASE_PROJECTS.filter((p) => filter === 'all' || p.status === filter);
   const count = (f: 'all' | ShowcaseStatus) =>

@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { isDemo, siteBaseUrl } from '../lib/config';
 import { buildViewer, normalizeEmail } from '../lib/permissions';
-import { getSupabase } from '../lib/supabase';
+import { loadSupabase, mayHaveSession, onSupabaseReady } from '../lib/supabase';
 import { VISITOR, type Profile, type Viewer } from '../lib/types';
 import { getApi, getDemoStore } from '../store';
 import { DEMO_VIEWERS, type DemoIdentity } from '../store/demoData';
@@ -118,35 +118,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ---- Supabase session tracking -----------------------------------------
   useEffect(() => {
-    const sb = getSupabase();
-    if (!sb) return;
+    if (isDemo) return;
     const err = takeLinkErrorFromUrl();
     if (err) setLinkError(err);
     const markerRecovery = takeRecoveryMarker();
 
     let active = true;
-    sb.auth.getSession().then(({ data }) => {
+    let stopListening: () => void = () => undefined;
+    // Follow the session from the moment the client exists: now, when this browser
+    // has one to restore, or later, when someone signs in or sends the contact form.
+    const cancelWait = onSupabaseReady((sb) => {
       if (!active) return;
-      setSession(data.session);
-      if (data.session) {
-        // Arrived from the reset email: either our ?recovery=1 marker survived the
-        // redirect, or this browser asked for a reset recently and came back with a code.
-        const flag = Number(safeGet(RECOVERY_FLAG) || 0);
-        const recentRequest = flag > 0 && Date.now() - flag < RECOVERY_MAX_AGE_MS;
-        if (markerRecovery || (ARRIVED_WITH_AUTH_CODE && recentRequest)) setRecovery(true);
-      }
-      setReady(true);
+      sb.auth.getSession().then(({ data }) => {
+        if (!active) return;
+        setSession(data.session);
+        if (data.session) {
+          // Arrived from the reset email: either our ?recovery=1 marker survived the
+          // redirect, or this browser asked for a reset recently and came back with a code.
+          const flag = Number(safeGet(RECOVERY_FLAG) || 0);
+          const recentRequest = flag > 0 && Date.now() - flag < RECOVERY_MAX_AGE_MS;
+          if (markerRecovery || (ARRIVED_WITH_AUTH_CODE && recentRequest)) setRecovery(true);
+        }
+        setReady(true);
+      });
+      const { data: sub } = sb.auth.onAuthStateChange((event, next) => {
+        if (!active) return;
+        if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+        if (event === 'SIGNED_OUT') setRecovery(false);
+        setSession(next);
+      });
+      stopListening = () => sub.subscription.unsubscribe();
     });
 
-    const { data: sub } = sb.auth.onAuthStateChange((event, next) => {
-      if (!active) return;
-      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
-      if (event === 'SIGNED_OUT') setRecovery(false);
-      setSession(next);
-    });
+    if (mayHaveSession(ARRIVED_WITH_AUTH_CODE) || markerRecovery) {
+      // A stored session or an email link to finish: load supabase-js right away.
+      loadSupabase().catch(() => {
+        // Could not download it: carry on signed out rather than loading forever.
+        if (active) setReady(true);
+      });
+    } else {
+      // First visit, or signed out: nothing to restore and nothing to download.
+      setReady(true);
+    }
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      cancelWait();
+      stopListening();
     };
   }, []);
 
@@ -217,7 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const sb = getSupabase();
+    const sb = await loadSupabase();
     if (!sb) {
       setDemoIdentityState('client');
       return;
@@ -228,7 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<SignUpResult> => {
-    const sb = getSupabase();
+    const sb = await loadSupabase();
     const demoStore = getDemoStore();
     if (!sb) {
       if (!demoStore) return { needsConfirmation: true };
@@ -256,7 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    const sb = getSupabase();
+    const sb = await loadSupabase();
     setRecovery(false);
     if (!sb) {
       setDemoIdentityState('visitor');
@@ -267,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
-    const sb = getSupabase();
+    const sb = await loadSupabase();
     if (!sb) return;
     safeSet(RECOVERY_FLAG, String(Date.now()));
     const { error } = await sb.auth.resetPasswordForEmail(email.trim(), {
@@ -277,7 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resendConfirmation = useCallback(async (email: string) => {
-    const sb = getSupabase();
+    const sb = await loadSupabase();
     if (!sb) return;
     const { error } = await sb.auth.resend({
       type: 'signup',
@@ -288,7 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updatePassword = useCallback(async (password: string) => {
-    const sb = getSupabase();
+    const sb = await loadSupabase();
     if (!sb) return;
     const { error } = await sb.auth.updateUser({ password });
     if (error) throw error;

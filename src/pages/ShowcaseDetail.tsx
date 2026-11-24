@@ -11,6 +11,7 @@ import { SHOWCASE_PROJECTS, findShowcaseProject } from '../data/projects';
 import { useI18n } from '../i18n/I18nProvider';
 import { assetUrl } from '../lib/format';
 import { groupClass, revealClass, useInView, useOnScreen } from '../lib/motion';
+import { useDocumentTitle } from '../lib/useDocumentTitle';
 
 export default function ShowcaseDetail() {
   const { slug } = useParams();
@@ -21,6 +22,7 @@ export default function ShowcaseDetail() {
   const gallery = useInView<HTMLDivElement>();
   const extra = useInView<HTMLElement>();
   const screen = useOnScreen<HTMLDivElement>();
+  useDocumentTitle(project ? pick(project.title) : t('showcase.title'));
 
   if (!project) {
     return (

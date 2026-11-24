@@ -5,10 +5,12 @@ import { useI18n } from '../i18n/I18nProvider';
 import { errorMessage } from '../lib/format';
 import { canUseDashboard } from '../lib/permissions';
 import { LIMITS } from '../lib/validation';
+import { useDocumentTitle } from '../lib/useDocumentTitle';
 
 /** Set a new password: reached from the reset email link, or "change password" when signed in. */
 export default function ResetPassword() {
   const { t } = useI18n();
+  useDocumentTitle(t('auth.newPasswordTitle'));
   const auth = useAuth();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);

@@ -16,6 +16,20 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Libraries in their own files: they change far less often than the site,
+        // so returning visitors keep them cached across deploys.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('@supabase')) return 'supabase';
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|@remix-run)[\\/]/.test(id)) {
+            return 'react';
+          }
+          return undefined;
+        },
+      },
+    },
   },
   test: {
     environment: 'node',

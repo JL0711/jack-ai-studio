@@ -12,6 +12,7 @@ import { useI18n } from '../i18n/I18nProvider';
 import type { StringKey } from '../i18n/strings';
 import { useMedia } from '../lib/motion';
 import { BEIJING, PACIFIC, hhmm, isReplyOpen, pad2, useNow, zoneTime } from '../lib/replyHours';
+import { useDocumentTitle } from '../lib/useDocumentTitle';
 
 const SERVICES: { key: 'web' | 'rag' | 'local' | 'auto' | 'bilingual'; tags: string[] }[] = [
   { key: 'local', tags: ['Ollama', 'Whisper', 'qwen3:14b'] },
@@ -64,6 +65,7 @@ function HeroHud() {
 
 export default function Home() {
   const { t, lang } = useI18n();
+  useDocumentTitle(null, t('brand.full'));
   // On a phone the card is only ~45 characters wide, with no room for its callouts:
   // it reads as a pile of random symbols, so phones skip it (and save the battery).
   const showGpu = useMedia('(min-width: 721px)');

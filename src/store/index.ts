@@ -1,7 +1,8 @@
-import { getSupabase } from '../lib/supabase';
+import { isDemo } from '../lib/config';
+import { loadSupabase } from '../lib/supabase';
 import type { StudioApi } from './api';
 import { createDemoStore, type DemoStore } from './demoStore';
-import { createSupabaseStore } from './supabaseStore';
+import { createLazySupabaseStore } from './lazySupabaseStore';
 
 let api: StudioApi | null = null;
 let demo: DemoStore | null = null;
@@ -9,12 +10,11 @@ let demo: DemoStore | null = null;
 /** The data API for this build: Supabase if configured, otherwise the in-memory demo store. */
 export function getApi(): StudioApi {
   if (!api) {
-    const sb = getSupabase();
-    if (sb) {
-      api = createSupabaseStore(sb);
-    } else {
+    if (isDemo) {
       demo = createDemoStore();
       api = demo;
+    } else {
+      api = createLazySupabaseStore(loadSupabase);
     }
   }
   return api;

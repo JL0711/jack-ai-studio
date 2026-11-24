@@ -5,12 +5,14 @@ import { useI18n } from '../i18n/I18nProvider';
 import { errorMessage } from '../lib/format';
 import { canUseDashboard } from '../lib/permissions';
 import { LIMITS, isValidEmail } from '../lib/validation';
+import { useDocumentTitle } from '../lib/useDocumentTitle';
 
 type Mode = 'signin' | 'signup' | 'reset';
 type Sent = { kind: 'signup' | 'reset'; email: string } | null;
 
 export default function Login() {
   const { t } = useI18n();
+  useDocumentTitle(t('auth.title'));
   const auth = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('signin');

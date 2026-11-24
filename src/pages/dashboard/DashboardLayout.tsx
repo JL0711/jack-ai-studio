@@ -1,9 +1,11 @@
+import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
 import { LoadState } from '../../components/DashboardParts';
 import { useI18n } from '../../i18n/I18nProvider';
 import { canManageUsers, canSeeInbox, canUseDashboard, countPending, isAwaitingApproval } from '../../lib/permissions';
 import type { Viewer } from '../../lib/types';
+import { useDocumentTitle } from '../../lib/useDocumentTitle';
 import { getApi } from '../../store';
 import { useLiveData } from '../../store/useLiveData';
 import AwaitingApproval from './AwaitingApproval';
@@ -12,6 +14,7 @@ import AwaitingApproval from './AwaitingApproval';
 export default function DashboardLayout() {
   const { t } = useI18n();
   const { viewer, ready, demo, profileReady, profileError, refreshProfile } = useAuth();
+  useDocumentTitle(t('dash.title'));
 
   if (!ready || (canUseDashboard(viewer.role) && !profileReady)) {
     return (
@@ -71,7 +74,11 @@ export default function DashboardLayout() {
             <UsersNavLink viewer={viewer} />
           </nav>
         )}
-        <Outlet />
+        {/* The inner pages come from the same on-demand file; this keeps the
+            sub-navigation in place for the instant they take to mount. */}
+        <Suspense fallback={<p className="muted route-loading">{t('common.loading')}</p>}>
+          <Outlet />
+        </Suspense>
       </div>
     </div>
   );
