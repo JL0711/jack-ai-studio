@@ -19,6 +19,12 @@
   position: relative;
   padding: clamp(80px, 9vw, 132px) 0;
   border-bottom: 1px solid var(--border);
+  /* Below the first screen: the browser skips laying out and painting a section
+     until it comes near the viewport. On a slow phone that is most of the work
+     before the first paint (the home page is ~8000 px tall). `auto` keeps the
+     real size once it has been rendered. Browsers without it just render as before. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
 }
 .section-head {
   display: grid;

@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
-import { buildStamp, pixelFontSubset } from './scripts/vite-plugins.mjs';
+import { buildStamp, pixelFontSubset, preloadFonts } from './scripts/vite-plugins.mjs';
 
 const stamp = buildStamp();
 
@@ -8,7 +8,10 @@ const stamp = buildStamp();
 // GitHub Pages path (https://<user>.github.io/<repo>/) or a custom domain.
 export default defineConfig({
   base: './',
-  plugins: [pixelFontSubset(), react()],
+  // Preload only the pixel font (~22 KB): it is on the first screen in every language,
+  // and arriving late it made the status line above the headline reflow and push the
+  // page down. Hubot Sans (93 KB) is not preloaded: on 3G it would delay the first paint.
+  plugins: [pixelFontSubset(), react(), preloadFonts([/pixel-subset-[^/]*\.woff2$/])],
   define: {
     __BUILD_SHA__: JSON.stringify(stamp.sha),
     __BUILD_DATE__: JSON.stringify(stamp.date),

@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useI18n } from '../i18n/I18nProvider';
@@ -47,6 +47,11 @@ export function Layout() {
   // Each public page wipes in on navigation. The dashboard keeps one key so its
   // inner pages don't reload their data on every click.
   const routeKey = pathname.startsWith('/dashboard') ? '/dashboard' : pathname;
+  // ...but not the page the visitor arrived on: the wipe would hide it for another
+  // half second on top of loading (on a slow phone the text is ready at ~0.6 s).
+  const firstKey = useRef(routeKey);
+  const navigated = useRef(false);
+  if (routeKey !== firstKey.current) navigated.current = true;
 
   return (
     <div className="app">
@@ -60,7 +65,7 @@ export function Layout() {
       <DemoBanner />
       <Header />
       <main id="main" tabIndex={-1}>
-        <div key={routeKey} className="route-fade">
+        <div key={routeKey} className={navigated.current ? 'route-fade' : undefined}>
           <Suspense fallback={<RouteLoading />}>
             <Outlet />
           </Suspense>

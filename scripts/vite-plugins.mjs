@@ -54,6 +54,32 @@ export function pixelFontSubset() {
   };
 }
 
+// ── Font preloads ──────────────────────────────────────────────────────────
+// Fonts are normally requested only once the page has rendered text that uses
+// them. On a slow phone that is a second later, and when they arrive the text
+// reflows: the status line above the headline drops from two lines to one and
+// everything below jumps. Preloading the small fonts the first screen needs
+// starts them together with the script, so they are ready before the first render.
+/** Vite plugin: <link rel="preload"> for built font files whose names match `patterns`. */
+export function preloadFonts(patterns) {
+  return {
+    name: 'preload-fonts',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const files = Object.keys(ctx.bundle ?? {}).filter((file) => patterns.some((p) => p.test(file)));
+        // crossorigin: fonts are always fetched in CORS mode; without it the preload is wasted.
+        return files.map((file) => ({
+          tag: 'link',
+          attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `./${file}`, crossorigin: '' },
+          injectTo: 'head',
+        }));
+      },
+    },
+  };
+}
+
 // ── Build stamp shown in the footer ──────────────────────────────────────
 export function buildStamp() {
   let sha = 'dev';
