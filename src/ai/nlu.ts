@@ -125,7 +125,7 @@ const ZH_PIVOT = /(但|可是|不过|而是|还要|得要)/;
 // Longest phrases first: "no need for" must not stop at "no" (and leave "need" to look like a pivot).
 const NEG_BEFORE_EN =
   /\b(no need (?:for|to)|don't need|do not need|doesn't need|does not need|don't want|do not want|won't need|will not need|can't use|cannot use|can not use|not allowed to use|don't use|do not use|not including|without|excluding|except|remove|skip|never|no)\b([^.!?;]{0,30})$/;
-const EN_PIVOT = /\b(but|however|though|although|also|plus|need|want|must|should|losing|breaking|hurting|affecting|harming|damaging|dropping|sacrificing|changing)\b/;
+const EN_PIVOT = /\b(but|however|though|although|also|plus|need|want|must|should|losing|breaking|hurting|affecting|harming|damaging|dropping|sacrificing|changing|scratch that|instead|actually|rather|wait)\b/;
 const NEG_AFTER_EN = /^\s*(?:is|are)?\s*(?:not needed|not required|unnecessary|not necessary|isn't needed|aren't needed|can wait)/;
 const UNSURE_ZH = /(要不要|需不需要|用不用|做不做|是不是|不知道|不确定|看情况|还没想好)[^，,。.!！?？]{0,8}$/;
 const UNSURE_EN = /\b(not sure (?:if|whether|about)|don't know (?:if|whether)|maybe|might|whether|possibly|perhaps)\b[^.!?;,]{0,20}$/;
@@ -344,16 +344,18 @@ function countNamed(low: string, names: string[]): number {
 // ---------- money ----------
 
 const CUR_BEFORE = '(us\\$|usd|\\$|¥|rmb|cny|人民币|€|eur|£|gbp)?';
+/** Currencies the estimate doesn't convert (S$, A$, HK$, AUD, 港币…): better no budget than a wrong one. */
+const OTHER_CURRENCY = /(s\$|a\$|hk\$|nz\$|c\$|au\$|\b(?:sgd|aud|hkd|nzd|cad|idr|inr|myr|thb|php|vnd|jpy|krw|twd|chf)\b|港币|港幣|港元|新币|澳币|澳元|日元|韩元|台币|卢比|rupiah|rupees?|ringgit|baht|yen\b)/i;
 // Units stick to the number ("5k", "3万", "1万5"); "2 weeks" is not 20,000 and "5 kinds" not 5,000.
 const AMOUNT =
   '(\\d+(?:,\\d{3})*(?:\\.\\d+)?(?:(?:k|w)(?![a-z])|\\s?(?:千|万)(?:\\d(?!\\d))?|\\s?grand\\b)?|[一二两三四五六七八九十百千万几]*[十百千万][一二两三四五六七八九]?)';
 // The low end of a range may leave its unit to the high end: "三到五万", "2-3千".
 const AMOUNT_LO = '(\\d+(?:,\\d{3})*(?:\\.\\d+)?(?:(?:k|w)(?![a-z])|\\s?(?:千|万))?|[一二两三四五六七八九十百千万几]+)';
-const CUR_AFTER = '\\s*(美元|美金|刀|dollars?|bucks|usd|元|块钱|块|人民币|rmb|cny|欧元|euros?|eur|英镑|pounds?|gbp|grand)?';
+const CUR_AFTER = '\\s*(美元|美金|刀|dollars?|bucks|usd|元|块钱|块|人民币|rmb|cny|欧元|euros?|eur|€|英镑|pounds?|gbp|£|grand)?';
 const MONEY_RANGE = new RegExp(`${CUR_BEFORE}\\s*${AMOUNT_LO}${CUR_AFTER}\\s*(?:-|–|—|~|～|到|至|to)\\s*${CUR_BEFORE}\\s*${AMOUNT}${CUR_AFTER}`, 'gi');
 const MONEY_ONE = new RegExp(`${CUR_BEFORE}\\s*${AMOUNT}${CUR_AFTER}`, 'gi');
 /** Words that make a bare number a budget (with a currency, no word is needed). */
-const BUDGET_WORDS = /(预算|上限|能出|能花|想花|只想花|愿意花|花|价位|费用|报价|出价|成本|budget|willing to pay|can pay|can spend|to spend|spend|price range|\bpay(?:ing)?\b|\bcost)/i;
+const BUDGET_WORDS = /(预算|上限|能出|能花|想花|只想花|愿意花|花|价位|费用|报价|出价|成本|够不|够吗|够用|够了吗|budget|willing to pay|can pay|can spend|to spend|spend|price range|\bpay(?:ing)?\b|\bcost)/i;
 const LIMIT_WORDS = /(以内|以下|之内|最多|不超过|上限|under|less than|up to|max(?:imum)?|no more than|at most|below)/i;
 const PER_UNIT_AFTER =
   /^\s*(\/|每|per\b|一个月|一年|\/月|\/年|一份|一次|一件|一张|一个|每个|每件|每张|起|a month|a year|monthly|per month|an hour|\/h|\/hr|每小时|each\b|apiece|a piece|a head|per person)/i;
@@ -387,6 +389,7 @@ export function readBudget(low: string, lang: Lang): BudgetRead | undefined {
   const consider = (m: RegExpExecArray, min: number, max: number, cur: Currency | null) => {
     const end = m.index + m[0].length;
     const near = low.slice(Math.max(0, m.index - 14), m.index);
+    if (OTHER_CURRENCY.test(low.slice(Math.max(0, m.index - 4), end + 10))) return;
     const wide = sentenceBefore(low, m.index, 36);
     const after = low.slice(end, end + 16);
     const budgetWord = /预算|budget/i.test(wide) || /^\s*(的)?(预算|budget)/i.test(after);
@@ -432,6 +435,12 @@ export function readBudget(low: string, lang: Lang): BudgetRead | undefined {
     if (!cur && (COUNT_AFTER_ZH.test(after) || COUNT_AFTER_EN.test(after))) continue;
     consider(m, range ? range[0] : n, n, cur);
   }
+  // "we have a couple thousand", "a few grand".
+  const few = low.match(/\b(a couple(?: of)?|a few|several)\s+(thousand|grand|k)\b/);
+  if (few && /\b(budget|spend|pay|afford|have|got|dollars|bucks|cost|price)\b/.test(low) && !OTHER_CURRENCY.test(low)) {
+    const n = few[1].startsWith('a couple') ? 2000 : 3000;
+    candidates.push({ money: { min: n, max: n, currency: lang === 'zh' ? 'CNY' : 'USD' }, assumed: true, raw: few[0], context: true });
+  }
   // "low four figures is fine": $1,000–3,000 (mid 4–6k, high 7–9k; five figures 10–30k).
   const fig = low.match(/\b(low|mid|high)?[- ]?(four|five)[- ]figures?\b/);
   if (fig) {
@@ -459,7 +468,7 @@ const DURATION_EN = new RegExp(`\\b(?:within|in|under|less than|by|needs? to be 
 const RELAXED =
   /(不急|不着急|慢慢来|时间充裕|时间宽裕|不赶时间|不赶|没有截止|没有deadline|\bno rush\b|\bno hurry\b|\bnot in a (?:rush|hurry)\b|\bno (?:hard |fixed |strict )?deadline\b|\b(?:timeline|schedule|deadline|timing|dates?) (?:is |are )?flexible\b|\bflexible (?:timeline|deadline|schedule|timing)\b|\bwhenever (?:you(?:'re| are)? ready|it'?s ready|works|you can)\b|\btake your time\b|\bnot urgent\b|\bno urgency\b|不急着|不是很急|不太急)/i;
 const RUSH =
-  /(尽快|越快越好|加急|很急|比较急|特别急|非常急|急用|急需|急[!！]|马上要|马上就要|今天要|明天要|这周要|本周要|\basap\b|\burgent(?:ly)?\b|\brush\b|as soon as possible|as fast as possible|by tomorrow|this week|make (?:it )?fast|\byesterday\b)/i;
+  /(尽快|越快越好|加急|很急|比较急|特别急|非常急|挺急|有点急|急的|急用|急需|急[!！]|马上要|马上就要|今天要|明天要|这周要|本周要|\basap\b|\burgent(?:ly)?\b|\brush\b|as soon as possible|as fast as possible|by tomorrow|this week|make (?:it )?fast|\byesterday\b)/i;
 const MONTHS_EN = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const ZH_MONTH: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10, 十一: 11, 十二: 12 };
 const WEEKDAYS_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -541,7 +550,7 @@ export function readDeadline(low: string, now: Date): { days?: number; rush?: bo
   }
 
   // 2. A calendar date: "12月20日前", "by March 15".
-  const date = low.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*(?:日|号)?\s*(?:前|之前|以前|上线|完成|交付)/);
+  const date = low.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*(?:日|号)?\s*(?:前|之前|以前|上线|完成|交付|有|开始|开业|开幕|比赛|活动|要用)/);
   if (date) set(daysUntil(now, Number(date[1]) - 1, Number(date[2])));
   const enDate = low.match(/\b(?:by|before|until|due)\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})/);
   if (enDate) set(daysUntil(now, MONTHS_EN.indexOf(enDate[1]), Number(enDate[2])));
@@ -565,6 +574,8 @@ export function readDeadline(low: string, now: Date): { days?: number; rush?: bo
       }
     }
   }
+  const mid = low.match(/\bmid[- ](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+  if (mid) set(daysUntil(now, MONTHS_EN.indexOf(mid[1]), 15));
   if (enMonth) {
     const month = MONTHS_EN.indexOf(enMonth[1]);
     const thisYear = endOfMonth(now.getFullYear(), month);
@@ -584,10 +595,11 @@ export function readDeadline(low: string, now: Date): { days?: number; rush?: bo
 
   // 6. Holidays.
   if (/(?:\b(?:by|before|until|for)\s+(?:christmas|xmas)\b)|(?:圣诞节?|平安夜)(?:前|之前|以前)/.test(low)) set(daysUntil(now, 11, 25));
-  if (/(春节|过年|chinese new year|lunar new year|\bcny\b)|(?:^|[^\d一二两三四五六七八九十几多去今明前])年前/.test(low)) {
+  if (/(春节|过年|过完年|年后|chinese new year|lunar new year|\bcny\b)|(?:^|[^\d一二两三四五六七八九十几多去今明前])年前/.test(low)) {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const next = SPRING_FESTIVAL.map(([y, mo, d]) => new Date(y, mo, d)).find((d) => d.getTime() > today);
-    if (next) set(daysTo(now, next));
+    const after = /(过完年|年后)/.test(low) && !/(春节前|过年前|年前)/.test(low);
+    if (next) set(daysTo(now, next) + (after ? 14 : 0));
   } else if (/(元旦|新年)(前|之前|以前)|\b(?:by|before|until)\s+(?:the\s+)?new year\b/.test(low)) {
     set(daysUntil(now, 0, 1));
   }
@@ -610,6 +622,7 @@ export function readDeadline(low: string, now: Date): { days?: number; rush?: bo
   if (/月底|月末|end of (?:the |this )?month/.test(low)) set(Math.max(3, daysTo(now, endOfMonth(now.getFullYear(), now.getMonth()))));
   if (/下个月|下月|next month/.test(low)) set(35);
   if (/年底|年末|end of (?:the |this )?year/.test(low)) set(daysUntil(now, 11, 31));
+  if (/\b(this|the current) quarter\b|本季度|这个季度/.test(low)) set(daysTo(now, endOfMonth(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 2)));
   const q = low.match(/\b(?:by |in |before |end of )?q([1-4])\b/);
   if (q) {
     const quarterEnd = Number(q[1]) * 3 - 1;
@@ -631,12 +644,12 @@ const HW_HAVE =
   /((\d|一|两|二|三|四)\s*(张|块|台|x|×|\*)\s*(rtx\s*)?(4090|3090|5090|4080|5080|a100|h100|a6000)|(有|已经有|已有|配了|买了|自己有|公司有|我们有)[^，,。.!?]{0,6}(显卡|gpu|服务器|工作站|rtx|4090|3090|5090|a100|h100|mac ?studio)|显卡服务器|gpu ?服务器|用的是\s*(mac|macbook|imac|mac ?studio|windows)|\b(we|i) (already )?(have|own|got|run)\b[^.!?]{0,30}\b(gpus?|servers?|workstations?|rtx|nvidia|a100|h100|4090|3090|mac ?studio)\b|\bwe('re| are) (on|using) (macs?|macbooks?|mac ?studios?)\b|\bon (our )?(windows|mac) (laptops|pcs|computers|machines)\b)/i;
 /** "like Uber for…", "类似美团的外卖平台": a platform big companies built over years. */
 const PLATFORM =
-  /((类似|像|仿|学)\s*(美团|淘宝|京东|拼多多|滴滴|饿了么|闲鱼|携程|大众点评|抖音|快手|小红书|知乎|b站|亚马逊)|(跟|和)\s*(美团|淘宝|京东|拼多多|滴滴|饿了么|闲鱼|携程|大众点评|抖音|快手|小红书|知乎|b站|亚马逊)\s*(一样|那样|那种|差不多|类似)|\b(?:the next|the new|an?) (?:uber|airbnb|amazon|facebook|instagram|tiktok|doordash)\b|\b(?:uber|airbnb)\s+(?:but\s+)?for\b|外卖平台|打车平台|多商户|多商家|商家入驻|撮合平台|\b(?:like|similar to|clone of|copy of|version of)\s+(?:an? )?(?:uber|airbnb|amazon|ebay|etsy|facebook|instagram|tiktok|doordash|fiverr|upwork|netflix|twitter|youtube|linkedin)\b|\b(?:uber|airbnb) (?:for|of)\b|\bmarketplace\b|\bmulti[- ]?vendor\b|\btwo[- ]sided\b)/i;
+  /((类似|像|仿|学)\s*(美团|淘宝|京东|拼多多|滴滴|饿了么|闲鱼|携程|大众点评|抖音|快手|小红书|知乎|b站|亚马逊)|(跟|和)\s*(美团|淘宝|京东|拼多多|滴滴|饿了么|闲鱼|携程|大众点评|抖音|快手|小红书|知乎|b站|亚马逊)\s*(一样|那样|那种|差不多|类似)|\b(?:the next|the new|an?) (?:uber|airbnb|amazon|facebook|instagram|tiktok|doordash)\b|\b(?:uber|airbnb)\s+(?:but\s+)?for\b|\bfind (?:a |an |the )?[a-z]+ near (?:them|me|you|their)\b|附近的[\u4e00-\u9fff]{1,4}(接单|抢单)|外卖平台|打车平台|多商户|多商家|商家入驻|撮合平台|\b(?:like|similar to|clone of|copy of|version of)\s+(?:an? )?(?:uber|airbnb|amazon|ebay|etsy|facebook|instagram|tiktok|doordash|fiverr|upwork|netflix|twitter|youtube|linkedin)\b|\b(?:uber|airbnb) (?:for|of)\b|\bmarketplace\b|\bmulti[- ]?vendor\b|\btwo[- ]sided\b)/i;
 /** "全部重做", "transform … across 12 business units": a programme, not a project. */
 const ENTERPRISE =
   /(全部重做|全部推翻|数字化转型|全面上ai|所有部门|各个部门|全集团|\bdigital transformation\b|\b(?:across|for) (?:all|every|our|\d+|twelve|ten|several|multiple) (?:business units|departments|divisions|subsidiaries)\b|\bentire (?:company|organi[sz]ation|customer journey|business)\b|\benterprise[- ]wide\b)/i;
 /** Their own store on a platform: a data source to connect, not a shop to build. */
-const OWN_PLATFORM = /(\b(?:our|my)\s+|我们的?|我的|公司的?)(shopify|woocommerce|淘宝|京东|有赞|微店|amazon|ebay|etsy)/i;
+const OWN_PLATFORM = /(\b(?:our|my)\s+|我们的?|我的|公司的?|网店是|网店用的?是?|店铺在|店开在|开在|用的是)\s*(shopify|woocommerce|淘宝|京东|有赞|微店|amazon|ebay|etsy)/i;
 // Asking for something new, even if it mentions what goes wrong today ("录入经常有错误，想自动化").
 const NEW_BUILD =
   /(想做|新做|做一个|做个|开发一个|搭一个|建一个|重新做|想要|希望能|想自动化|想用ai|帮我(写|做|开发)|能不能做|\bbuild (?:a|an|me|us)\b|\bcreate (?:a|an)\b|\bnew (?:site|website|app|system|store|tool)\b|\bmake (?:a|an|me)\b|\b(?:we|i) (?:want|need|'d like|would like) (?:a|an|to)\b|\blooking for\b|\bautomate\b)/i;
@@ -685,10 +698,14 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
   };
   const kindHits: Partial<Record<Kind, Hit[]>> = {};
 
-  // Kinds
+  // Kinds. A change of mind inside the message ("…app, actually no, scratch that, a website",
+  // "做小程序…算了…还是做个网页版的商城") counts only what comes after it.
+  const turn = [...t.low.matchAll(/(scratch that|actually,? no|no,? wait|never ?mind|算了|不对，|还是做|改成|换成)/g)].pop();
+  const tail = turn && turn.index !== undefined ? t.low.slice(turn.index + turn[0].length) : '';
+  const kindText: Text = tail.length >= 6 && ALL_KINDS.some((k) => score({ orig: tail, low: tail }, KINDS[k].signals).pos >= 2) ? { orig: tail, low: tail } : t;
   const kindScores: Partial<Record<Kind, number>> = {};
   for (const k of ALL_KINDS) {
-    const { pos, hits } = score(t, KINDS[k].signals);
+    const { pos, hits } = score(kindText, KINDS[k].signals);
     if (pos > 0) {
       kindScores[k] = Math.round(pos * 10) / 10;
       kindHits[k] = hits;
@@ -698,7 +715,8 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
   const bugScore = score(t, BUG_SIGNALS);
   // "之前的网站打不开了，想重新做一个" is a new build that mentions a bug.
   const bug = bugScore.pos >= 3 && !(NEW_BUILD.test(t.low) && bugScore.pos < 6);
-  let modify = mod.pos >= 2.5 || bug;
+  // "想做个网站，以后志愿者维护": a new build that mentions upkeep is not a change to an existing one.
+  let modify = (mod.pos >= 2.5 && !(NEW_BUILD.test(t.low) && mod.pos < 4)) || bug;
   if (modify) mod.hits.forEach(remember);
   if (bug) bugScore.hits.forEach(remember);
 
@@ -749,10 +767,13 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
   if (kind && kind !== 'fix') (kindHits[kind] ?? []).filter((h) => h.weight >= 1.5).forEach(remember);
   if (kind === 'rag' && features.offline) (kindHits.local_ai ?? []).filter((h) => h.weight >= 2.5).forEach(remember);
 
-  // Features (a bug report's features are what's broken, not what to build)
+  // Features (a bug report's features are what's broken, not what to build). A quoted
+  // example ("输入“5年以上Java、做过支付”就能找出合适的人") is not a feature request.
+  const unquoted = t.low.replace(/"[^"]{1,80}"|「[^」]{1,80}」|『[^』]{1,80}』/g, (q) => ' '.repeat(q.length));
+  const featText: Text = { orig: t.orig, low: unquoted };
   if (!bug) {
     for (const f of ALL_FEATURES) {
-      const { pos, neg, hits } = score(t, FEATURES[f].signals, true);
+      const { pos, neg, hits } = score(featText, FEATURES[f].signals, true);
       if (pos >= 2) {
         features[f] = true;
         hits.forEach(remember);

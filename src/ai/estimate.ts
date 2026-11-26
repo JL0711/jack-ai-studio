@@ -28,6 +28,9 @@ const CORE_OUTPUT: Partial<Record<Kind, FeatureId[]>> = {
   scraper: ['reports', 'schedule'],
   integration: ['schedule'],
   rag: ['ocr'],
+  webapp: ['booking'],
+  chatbot: ['booking'],
+  site: ['booking'],
 };
 
 /** Included features a visitor can take out of the base ("暂时不用支付的商城"). */

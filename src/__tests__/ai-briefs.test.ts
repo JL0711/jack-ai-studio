@@ -517,3 +517,67 @@ describe('unseen briefs', () => {
     expect(state.req.features.notifications).toBe(true);
   });
 });
+
+// A third set: what still went wrong on briefs nobody had tuned for.
+describe('third set', () => {
+  const est = (turn: Turn) => (turn.blocks.find((b) => b.t === 'estimate') as { est: { usd: number[] } } | undefined)?.est;
+
+  it('declines real-money card games and contact-detail harvesting', () => {
+    for (const [lang, text] of [
+      ['zh', '想做一个棋牌游戏平台，可以充值提现的那种，带代理分销系统，预算20万'],
+      ['en', 'Need a tool that collects phone numbers and home addresses of people from Facebook groups in my area so we can cold call them. Can pay $2k.'],
+    ] as [Lang, string][]) {
+      const { turns } = chat(lang, [text]);
+      expect(est(turns[0]), text).toBeUndefined();
+    }
+  });
+
+  it('a private AI that answers from ~500 manuals is priced as document Q&A, not a bare install', () => {
+    const r = read("We're a 25-person accounting firm. The partners want a ChatGPT-like assistant, but client financial data can't leave our office. Can you set up a private AI on our own hardware that can also answer questions from our internal procedure manuals (~500 docs)? Budget $15k-20k for your time, we buy the hardware separately.");
+    expect(r.kind).toBe('rag');
+    expect(r.features.offline).toBe(true);
+    expect(estimate(r)!.usd[0]).toBeGreaterThan(1000);
+  });
+
+  it('a change of mind inside one message, and small changes said in Chinese', () => {
+    expect(read('We need a mobile app for our bakery... actually no, scratch that, a website with online ordering is enough. Pickup only, no delivery. Budget ~$2500.').kind).toBe('site');
+    const r = read('就改一下网站底部的电话号码和地址，原来的人不干了，是wordpress的');
+    expect(r.modify).toBe(true);
+    expect(estimate(r)!.usd[1]).toBeLessThanOrEqual(700);
+  });
+
+  it('two systems to keep in sync are an integration; a new site that volunteers will maintain is new', () => {
+    expect(read('我们ERP用的金蝶，网店是Shopify，现在库存要两边手动同步，老是超卖。想做个对接，订单和库存自动同步。SKU大概1500个。预算1-2万').kind).toBe('integration');
+    expect(read('We want to connect our CAT tool (memoQ) with our project management (Monday.com), so when project is created in Monday it is created in memoQ too and the status come back.').kind).toBe('integration');
+    expect(read('hi 我们教会想做个website，要有活动日历、讲道录音能在线听，还要有奉献功能（online donation）。我们没什么预算，平时是志愿者维护，希望后台简单好改').modify).toBe(false);
+  });
+
+  it('questions mid-chat are answered, not added to the project', () => {
+    const { state, turns } = chat('en', [
+      "We'd like a chatbot on our recruitment agency website that answers candidate questions and collects CVs.",
+      'Do you offer maintenance after launch? And how do payments work?',
+    ]);
+    expect(state.req.features.payments).toBeUndefined();
+    expect(textOf(turns[1])).toMatch(/milestone/);
+  });
+
+  it('data residency gets an answer', () => {
+    const { turns } = chat('en', ['Need a booking system for my physiotherapy clinic', "4 therapists. Patients book online and get email reminders, and we'd like intake forms too. Around $3-4k", 'Oh and patient data has to stay in Australia']);
+    expect(textOf(turns[2])).toMatch(/Australia/);
+  });
+
+  it('Singapore dollars are not read as US dollars; a quoted search example is not a feature', () => {
+    expect(read('Need a small Windows app for our warehouse in Singapore: scan a barcode, look up the item in our SQL Server database, print a label on a Zebra printer. Runs on 3 PCs, and those machines have no internet. Budget S$3-4k.').budget).toBeUndefined();
+    const r = read('我们是猎头公司，简历库里大概3万份简历，PDF和Word都有。想做个内部用的AI搜索，比如输入“5年以上Java、做过支付”就能找出合适的人，最好还能给个匹配理由。简历都是候选人隐私，不能传到外面的服务器，要部署在我们自己的电脑上。预算不是问题，主要看效果');
+    expect(r.kind).toBe('rag');
+    expect(r.features.payments).toBeUndefined();
+    expect(r.features.offline).toBe(true);
+  });
+
+  it('a two-sided marketplace is said plainly even without naming one', () => {
+    const { state, turns } = chat('en', ['Hi Jack, I have idea for app for dog walkers in my city. Owners can find walker near them, book and pay in the app, see GPS of the walk live, and rate the walker. Need iOS and Android. I have budget 4000 USD. Is it possible in 2 months?']);
+    expect(state.req.scale).toBe('platform');
+    expect(state.req.features.payments).toBe(true);
+    expect(textOf(turns[0])).toMatch(/first phase/);
+  });
+});

@@ -42,6 +42,7 @@ export type FaqId =
   | 'models'
   | 'unsupported'
   | 'personal_data'
+  | 'residency'
   | 'availability'
   | 'mvp'
   | 'first';
@@ -56,25 +57,30 @@ interface FaqRule {
 const RULES: FaqRule[] = [
   {
     id: 'unsupported',
-    zh: /(游戏外挂|外挂|刷单|刷量|刷好评|刷评|刷五星|刷评论|刷粉|水军|批量注册|养号|撞库|盗刷|盗号|黑进|入侵(别人|他人|对方)|破解(密码|软件|账号|版权)|赌博|博彩|彩票|色情|翻墙代理|区块链|nft|加密货币|虚拟币|挖矿|炒币|发币|空投|meme币|土狗|币安|以太坊|交易所|(偷看|查看|监控|定位|盗取)[^，,。.]{0,10}(别人|他人|老公|老婆|对象|前任|女朋友|男朋友)[^，,。.]{0,10}(手机|微信|聊天|位置|账号|密码)|(前任|前女友|前男友)[^。.]{0,20}(密码|账号|微信))/,
-    en: /\b(cheats?|hack(?:ing)? into|hack (?:an?|someone|their|his|her|my ex)|(?:get|break|log) into\b[^.]{0,30}\b(?:account|instagram|facebook|email|phone|wechat)|my ex'?s|someone else'?s account|crack(?:ing)? (?:a |the )?(?:password|software|licen[cs]e)|gambling|casino|betting|adult content|porn|nft|crypto(?:currency)?|bitcoin|crypto mining|token launch|blockchain|fake (?:reviews?|accounts?|followers|likes)|bot accounts|mass (?:register|account creation)|spamm?(?:ing|er)?|buy followers|meme ?coins?|solana|ethereum|binance|trading bot|auto-?trad(?:e|es|ing)|airdrops?|presale|my ex\b|changed (?:the|my|our|his|her) password|get (?:me|us) back in(?:to)?|spy on|someone'?s (?:phone|account|messages))\b/,
+    zh: /(游戏外挂|外挂|刷单|刷量|刷好评|刷评|刷五星|刷评论|刷粉|水军|批量注册|养号|撞库|盗刷|盗号|黑进|入侵(别人|他人|对方)|破解(密码|软件|账号|版权)|赌博|博彩|彩票|色情|百家乐|老虎机|充值提现|(棋牌|捕鱼|麻将|斗地主)[^。.]{0,20}(充值|提现|上分|下分)|翻墙代理|区块链|nft|加密货币|虚拟币|挖矿|炒币|发币|空投|meme币|土狗|币安|以太坊|交易所|(偷看|查看|监控|定位|盗取)[^，,。.]{0,10}(别人|他人|老公|老婆|对象|前任|女朋友|男朋友)[^，,。.]{0,10}(手机|微信|聊天|位置|账号|密码)|(前任|前女友|前男友)[^。.]{0,20}(密码|账号|微信))/,
+    en: /\b(cheats?|hack(?:ing)? into|hack (?:an?|someone|their|his|her|my ex)|(?:get|break|log) into\b[^.]{0,30}\b(?:account|instagram|facebook|email|phone|wechat)|my ex'?s|someone else'?s account|crack(?:ing)? (?:a |the )?(?:password|software|licen[cs]e)|gambling|casino|betting|real[- ]money (?:games?|poker|slots)|slot machines?|sweepstakes casino|adult content|porn|nft|crypto(?:currency)?|bitcoin|crypto mining|token launch|blockchain|fake (?:reviews?|accounts?|followers|likes)|bot accounts|mass (?:register|account creation)|spamm?(?:ing|er)?|buy followers|meme ?coins?|solana|ethereum|binance|trading bot|auto-?trad(?:e|es|ing)|airdrops?|presale|my ex\b|changed (?:the|my|our|his|her) password|get (?:me|us) back in(?:to)?|spy on|someone'?s (?:phone|account|messages))\b/,
   },
   // Personal contact data, or platforms whose terms forbid scraping: the scraper kind already says "public, permitted data only".
   {
     id: 'personal_data',
     zh: /((爬|采集|抓取|抓|收集|导出).{0,16}(手机号|电话号码|身份证|邮箱|微信号|个人信息|联系方式)|(手机号|电话号码|身份证|邮箱|微信号|个人信息|联系方式).{0,16}(爬|采集|抓取|抓下来|抓|收集|导出)|(领英|linkedin).{0,20}(爬|采集|抓|邮箱|联系方式|名单))/,
-    en: /(\b(?:scrap(?:e|er|ers|ing)|crawl(?:er|ing)?|harvest(?:ing)?|extract(?:ing)?|collect(?:ing)?)\b[^.]{0,40}\b(?:linkedin|emails? addresses|emails|phone numbers|personal (?:data|info)|contact (?:details|info))\b|\blinkedin\b[^.]{0,40}\b(?:scrap(?:e|er|ing)|leads|emails|profiles)\b|\b(?:emails?|phone numbers|contact details)\b[^.]{0,40}\b(?:scrap(?:e|er|ing)|crawl(?:er|ing)?|harvest(?:ing)?)\b)/,
+    en: /(\b(?:scrap(?:e|es|ed|er|ers|ing)|crawl(?:s|ed|er|ing)?|harvest(?:s|ed|ing)?|extract(?:s|ed|ing)?|collect(?:s|ed|ing)?|grab(?:s|bed|bing)?|gather(?:s|ed|ing)?|pull(?:s|ed|ing)?)\b[^.]{0,50}\b(?:linkedin|emails? addresses|emails|phone numbers|home addresses|personal (?:data|info|details)|contact (?:details|info)|names and emails)\b|\blinkedin\b[^.]{0,40}\b(?:scrap(?:e|er|ing)|leads|emails|profiles)\b|\b(?:emails?|phone numbers|contact details|home addresses)\b[^.]{0,40}\b(?:scrap(?:e|es|ed|er|ing)|crawl(?:s|ed|er|ing)?|harvest(?:s|ed|ing)?|cold[- ]call(?:s|ing)?)\b)/,
   },
   { id: 'bot', zh: /(机器人吗|是机器人|是真人|有真人吗|你是ai|是ai吗|是不是ai|你是谁|和jack聊|找jack本人|jack本人)/, en: /\b(are you (a )?(bot|robot|human|real|ai)|real person|talk to (a )?(human|person|jack)|speak to (a )?(human|person|jack)|who are you)\b/ },
   { id: 'mvp', zh: /(精简版|简化版|先做核心|小一点的版本|最小版本|\bmvp\b|先做一部分|分期做|分两期|便宜点的版本)/, en: /\b(mvp|smaller version|cheaper version|lite version|phase (one|1)|first phase|minimum viable|start small)\b/ },
   { id: 'discount', zh: /(便宜|打折|优惠|少点|降价|能不能少|贵了|太贵|砍价)/, en: /\b(discount|cheaper|lower (the )?price|too expensive|negotiat|any deal|reduce the (price|cost))\b/ },
   { id: 'first', zh: /(第一版|先看到|多久能看到|什么时候能看到|demo什么时候|看到效果)/, en: /\b(first version|see (something|progress)|when can i see|first demo|early version)\b/ },
-  { id: 'payment', zh: /(全款|一次性付|怎么付|如何付|付款方式|付款流程|怎么付款|分几次付|分期付|分期|定金多少|要付定金|首付|预付|付钱给你|怎么给钱|尾款|付款节点|支付方式|付费方式)/, en: /\b(how (do|would|should|can) (i|we) pay|payment (terms|schedule|plan|methods?)|upfront|installments?|milestone payments?|pay you|paying you|deposit (do|would) you)\b/ },
+  { id: 'payment', zh: /(全款|一次性付|怎么付|如何付|付款方式|付款流程|怎么付款|分几次付|分期付|分期|定金多少|要付定金|首付|预付|付钱给你|怎么给钱|尾款|付款节点|支付方式|付费方式)/, en: /\b(how (do|does) (the )?payments? work|how (do|would|should|can) (i|we) pay|payment (terms|schedule|plan|methods?)|upfront|installments?|milestone payments?|pay you|paying you|deposit (do|would) you)\b/ },
   { id: 'price', zh: /(多少钱|价格|收费|报价|费用|怎么算钱|贵不贵|价位|时薪|一小时多少|怎么收费)/, en: /\b(how much|price|pricing|cost|rates?|hourly|charge|quote|fees?|expensive)\b/ },
   { id: 'timeline', zh: /(多久|多长时间|几天|几周|工期|周期|什么时候能做完|多快)/, en: /\b(how long|timeline|turnaround|how fast|how quickly|when (can|could|will) (it|you) (be )?(done|finished|ready)|duration|eta)\b/ },
   { id: 'process', zh: /(流程|怎么合作|步骤|合作方式|怎么开始|下一步|如何开始|怎么做)/, en: /\b(process|how do (you|we) (work|start)|how does (it|this) work|next steps?|get started|how to start|workflow with you)\b/ },
   { id: 'availability', zh: /(档期|排期|什么时候能开始|什么时候可以开始|多久能开始|有空吗|有没有空|忙不忙|能接吗|还接单|接不接)/, en: /\b(availability|available to start|when (can|could) you start|are you available|have (the )?capacity|your schedule|(want|like|plan|hope) to start (in|on|next|this|around))\b/ },
   { id: 'hours', zh: /(多久回|多久能回|回复(时间|时段|速度)|回复.{0,2}快|回得快|回复及时|几点(回|上班|在线)|时差|工作时间|什么时候回|联系得上|找得到你|你在线吗|在线吗)/, en: /\b(reply time|response time|how (fast|quickly|soon) (do|will|can) you (reply|respond|answer)|time ?zones?|working hours|office hours|online now|reach you|when do you reply)\b/ },
+  {
+    id: 'residency',
+    zh: /(数据|服务器|资料)[^。.]{0,10}(放在|存在|留在|只能在|必须在)[^。.]{0,4}(国内|中国|香港|新加坡|澳洲|澳大利亚|欧洲|欧盟|美国|加拿大|日本)/,
+    en: /\b(data|servers?|hosting|records)\b[^.]{0,30}\b(stay|stays|be kept|kept|hosted|stored|located|remain)\b[^.]{0,12}\bin (australia|the eu|europe|canada|the uk|britain|singapore|hong kong|china|the us|the usa|germany|japan|new zealand|our country)\b/,
+  },
   { id: 'privacy', zh: /(保密|隐私|数据安全|泄露|泄密|安全吗|数据会不会|资料安全)/, en: /\b(nda|confidential(ity)?|privacy|secure|security|data (safe|safety|protection|leak)|gdpr|leak)\b/ },
   { id: 'source', zh: /(源码|源代码|代码归|版权|知识产权|代码给我|交付代码)/, en: /\b(source code|ownership of the code|own the code|ip rights|intellectual property|who owns|hand ?over (the )?(code|source|repo))\b/ },
   { id: 'maintenance', zh: /(维护|售后|出了问题|出问题怎么办|保修|长期支持|以后改)/, en: /\b(maintenance|maintain|support after|after (launch|delivery)|bugs? after|warranty|ongoing support|retainer|updates? later)\b/ },
@@ -438,6 +444,15 @@ export function answerFaq(id: FaqId, ctx: FaqContext): FaqAnswer {
           `Collecting personal contact details (emails, phone numbers), or scraping platforms whose terms forbid it such as LinkedIn, isn't something Jack takes on. Public data that may be collected is fine, e.g. product prices or public listings and news.`,
         ),
         ask: [T(lang, '我想监控几个网站上的商品价格', 'I want to track product prices on a few sites')],
+      };
+    case 'residency':
+      return {
+        text: T(
+          lang,
+          `数据放在哪个地区，部署时可以选：常用的云服务都有澳洲、欧洲、亚洲等区域，也可以用你自己的服务器。开工前把这一条写进需求；需要合规文件（比如数据处理协议）的话，和 Jack 确认。`,
+          `Where the data lives can be chosen at deployment: the usual cloud services have regions in Australia, Europe, Asia and elsewhere, or your own servers can be used. It goes into the written brief before work starts; if you need compliance paperwork (e.g. a data processing agreement), confirm it with Jack.`,
+        ),
+        contact: true,
       };
     case 'availability':
       return {

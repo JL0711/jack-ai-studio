@@ -168,7 +168,8 @@ function quantityBits(req: Requirements, lang: Lang): string[] {
   if (q.pages && req.kind === 'site') out.push(T(lang, q.pages === 1 ? '单页' : `约 ${q.pages} 个页面`, q.pages === 1 ? 'one page' : `about ${n_(q.pages, 'page')}`));
   if (q.users) out.push(T(lang, `约 ${fmtInt(q.users)} 人使用`, `about ${n_(q.users, 'user')}`));
   if (q.products) out.push(T(lang, `约 ${fmtInt(q.products)} 个商品`, `about ${n_(q.products, 'product')}`));
-  if (q.languages && q.languages > 2) out.push(T(lang, `${q.languages} 种语言`, `${q.languages} languages`));
+  // (With the languages feature on, the card's line already says "3 languages".)
+  if (q.languages && q.languages > 2 && !req.features.i18n) out.push(T(lang, `${q.languages} 种语言`, `${q.languages} languages`));
   return out;
 }
 
@@ -464,8 +465,8 @@ function estimateTurn(s0: ChatState, before: Requirements, opts: { now: Date; te
           )
         : T(
             lang,
-            '说实话：你说的这种大平台，背后是很大的团队做了很多年。Jack 一个人做，适合先做第一期：只做一条最核心的流程（比如下单和付款），上线验证了再扩展。上面的价格是按第一期粗估的。',
-            "To be straight: the platform you mention was built by a large team over years. Working solo, Jack would build a first phase with one core flow (e.g. ordering and payment), launch it, then grow it. The price above is a rough figure for that first phase.",
+            '说实话：这种平台（两头都有用户，要撮合、支付、评价）功能很多，大公司都是整个团队做了很多年。Jack 一个人做，适合先做第一期：只做一条最核心的流程（比如下单和付款），上线验证了再扩展。上面的价格是按第一期粗估的。',
+            "To be straight: a platform like this (users on both sides, matching, payments, ratings) is a lot of product; the big ones took whole teams years. Working solo, Jack would build a first phase with one core flow (e.g. ordering and payment), launch it, then grow it. The price above is a rough figure for that first phase.",
           ),
     );
   }
@@ -636,7 +637,7 @@ const QUESTION_ZH = /[?？]|吗|呢\s*$|怎么|如何|多少|能不能|可不可
 // English: a question mark, or a sentence that opens like a question ("where" inside "a portal where…" is not one).
 const QUESTION_EN = /\?|^\s*(how|what|when|where|who|why|which|can|could|do|does|did|is|are|will|would|should|may)\b/i;
 // Other people's contact details ("发到我邮箱" is not one of them).
-const PERSONAL = /(email addresses|their emails|emails? and phone|phone numbers|contact (details|info)|手机号|电话号码|邮箱地址|联系方式|微信号|(用户|客户|求职者|会员|个人|他们)的?(邮箱|手机))/i;
+const PERSONAL = /(email addresses|their emails|emails? and phone|names and emails|names, emails|phone numbers|home addresses|contact (details|info)|手机号|电话号码|邮箱地址|联系方式|微信号|家庭住址|(用户|客户|求职者|会员|个人|他们)的?(邮箱|手机))/i;
 
 /** The sentences of a message that ask something, for FAQ matching ("" if none). */
 function askedPart(text: string): string {
@@ -753,6 +754,11 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
       // "回复", "合同" or "电话" in a project description are just the project.
       const asked = askedPart(text);
       const faq = asked ? matchFaq(asked) : null;
+      // Every sentence is a question ("maintenance after launch? how do payments work?"): answer them.
+      const onlyQuestions = !!asked && asked.replace(/\s/g, '').length >= prepare(text).low.replace(/\s/g, '').length * 0.9;
+      if (onlyQuestions && faq && (!parsed.kind || parsed.kind === 'fix') && Object.keys(parsed.quantities).length === 0 && !parsed.budget) {
+        return faqTurn(s, matchFaqs(asked), ctx.now);
+      }
       const hasProject = !!parsed.kind || parsed.signal >= 2 || (!!s.req.kind && parsed.signal >= 1);
       if (hasProject) {
         const before = s.req;
