@@ -1,0 +1,280 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import type { Chip } from '../ai/dialog';
+import { estimateText } from '../ai/summary';
+import { SendIcon } from '../components/Icons';
+import { useI18n } from '../i18n/I18nProvider';
+import { translate } from '../i18n/strings';
+import { useMedia, useReducedMotion } from '../lib/motion';
+import { EstimateCard } from './EstimateCard';
+import { RichText } from './RichText';
+import { SendToJack, sentText } from './SendToJack';
+import {
+  closeAssistant,
+  markSent,
+  pushAssistantText,
+  recalcInPlace,
+  sendInput,
+  sendText,
+  useAssistant,
+  visitorWords,
+  type AssistantMessage,
+} from './store';
+import './chat.css';
+
+const MAX = 2000;
+
+function Thinking({ lines }: { lines: string[] }) {
+  const { t } = useI18n();
+  return (
+    <div className="as-thinking" role="status">
+      <span className="as-thinking-head">
+        <i className="led is-wip" aria-hidden="true" />
+        {t('assistant.thinking')}
+      </span>
+      <ol>
+        {lines.map((l, i) => (
+          <li key={i}>{l}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function AssistantTurn({
+  msg,
+  live,
+  onChip,
+  onSend,
+}: {
+  msg: AssistantMessage;
+  live: boolean;
+  onChip: (c: Chip) => void;
+  onSend: () => void;
+}) {
+  const { turn } = msg;
+  const { state } = useAssistant();
+  const lang = turn.lang;
+  return (
+    <div className="as-msg as-bot" lang={lang === 'zh' ? 'zh-CN' : 'en'}>
+      <span className="as-who">
+        <i className="as-who-led" aria-hidden="true" />
+        {translate(lang, 'assistant.bot')}
+      </span>
+      {turn.blocks.map((b, i) => {
+        switch (b.t) {
+          case 'text':
+            return (
+              <div key={i} className="as-text">
+                <RichText text={b.text} />
+              </div>
+            );
+          case 'estimate':
+            return (
+              <EstimateCard
+                key={i}
+                est={b.est}
+                req={b.req}
+                lang={lang}
+                live={live}
+                fresh={msg.fresh}
+                onToggle={(f, on) => void recalcInPlace({ t: 'toggle', feature: f, on }, lang)}
+                onSend={onSend}
+                copyText={live && state ? estimateText(state) : undefined}
+              />
+            );
+          case 'links':
+            return (
+              <ul key={i} className="as-links">
+                {b.items.map((l) => (
+                  <li key={l.to}>
+                    <Link to={l.to} className="text-link">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            );
+          case 'question': {
+            const open = live && state?.pending === b.slot;
+            return (
+              <div key={i} className="as-question">
+                <p className="as-question-text">{b.text}</p>
+                {b.why && <p className="as-question-why">{b.why}</p>}
+                <div className="as-options" role="group" aria-label={b.text}>
+                  {b.options.map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      className="demo-chip"
+                      disabled={!open}
+                      onClick={() => void sendInput({ t: 'answer', slot: b.slot, value: o.value }, lang, o.label)}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+        }
+        return null;
+      })}
+      {live && turn.chips.length > 0 && (
+        <div className="as-chipbar" role="group" aria-label={lang === 'zh' ? '可以接着问' : 'Suggestions'}>
+          {turn.chips.map((c) => (
+            <button key={c.key} type="button" className={`as-sugg${c.t === 'contact' ? ' is-primary' : ''}${c.t === 'link' ? ' is-link' : ''}`} onClick={() => onChip(c)}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ChatPanel({ variant }: { variant: 'drawer' | 'page' }) {
+  const { t, lang } = useI18n();
+  const { messages, busy, thinking, state, from } = useAssistant();
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
+  const phone = useMedia('(max-width: 640px)');
+  const reduced = useReducedMotion();
+  const lastAssistant = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === 'assistant') return messages[i].id;
+    return null;
+  }, [messages]);
+  const lastCount = useRef(messages.length);
+
+  // Keep the newest turn in view: its top, so a long reply is read from the start.
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const grew = messages.length > lastCount.current;
+    lastCount.current = messages.length;
+    if (!grew && !thinking && !sending) return;
+    const items = el.querySelectorAll<HTMLElement>('.as-msg, .as-send, .as-thinking');
+    const target = items[items.length - 1];
+    if (!target) return;
+    const top = target.offsetTop - el.offsetTop - 12;
+    el.scrollTo({ top: target.offsetHeight > el.clientHeight * 0.8 ? top : el.scrollHeight, behavior: reduced ? 'auto' : 'smooth' });
+  }, [messages, thinking, sending, reduced]);
+
+  useEffect(() => {
+    if (variant === 'drawer' && !phone) inputRef.current?.focus({ preventScroll: true });
+  }, [variant, phone]);
+
+  // The box grows with the text (CSS field-sizing does this where supported).
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el || (typeof CSS !== 'undefined' && CSS.supports?.('field-sizing', 'content'))) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight + 2, 180)}px`;
+  }, [text]);
+
+  const submit = () => {
+    const v = text.trim();
+    if (!v || busy || Array.from(v).length > MAX) return;
+    setText('');
+    void sendText(v, lang);
+  };
+
+  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter sends; Shift+Enter is a new line; never while an IME (Chinese input) is composing.
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+      e.preventDefault();
+      submit();
+    }
+  };
+
+  const onChip = (c: Chip) => {
+    if (busy) return;
+    switch (c.t) {
+      case 'say':
+        void sendText(c.text, lang);
+        break;
+      case 'contact':
+        setSending(true);
+        break;
+      case 'mvp':
+        void sendInput({ t: 'mvp', drop: c.drop }, lang, c.label);
+        break;
+      case 'currency':
+        void sendInput({ t: 'currency', currency: c.currency }, lang, c.label);
+        break;
+      case 'link':
+        if (variant === 'drawer' && phone) closeAssistant();
+        navigate(c.to);
+        break;
+    }
+  };
+
+  const count = Array.from(text).length;
+  const convLang = state?.lang ?? lang;
+
+  return (
+    <div className={`as-panel is-${variant}`}>
+      <div ref={listRef} className="as-list-scroll" role="log" aria-live="polite" aria-relevant="additions" aria-label={t('assistant.dialog')}>
+        {messages.map((m) =>
+          m.role === 'user' ? (
+            <div key={m.id} className="as-msg as-user">
+              <span className="visually-hidden">{t('assistant.you')}: </span>
+              <p>{m.text}</p>
+            </div>
+          ) : (
+            <AssistantTurn key={m.id} msg={m} live={m.id === lastAssistant && !sending} onChip={onChip} onSend={() => setSending(true)} />
+          ),
+        )}
+        {thinking && <Thinking lines={thinking} />}
+        {sending && state && (
+          <SendToJack
+            state={state}
+            said={visitorWords()}
+            from={from}
+            onCancel={() => setSending(false)}
+            onSent={() => {
+              setSending(false);
+              markSent();
+              pushAssistantText(sentText(convLang), convLang);
+            }}
+          />
+        )}
+        <p className="as-privacy">{t('assistant.privacy')}</p>
+      </div>
+      <form
+        className="as-composer"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <label htmlFor={`as-input-${variant}`} className="visually-hidden">
+          {t('assistant.placeholder')}
+        </label>
+        <textarea
+          id={`as-input-${variant}`}
+          ref={inputRef}
+          className="as-input"
+          rows={variant === 'page' ? 2 : 1}
+          placeholder={t('assistant.placeholder')}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onKey}
+          enterKeyHint="send"
+          aria-describedby={count > MAX ? 'as-too-long' : undefined}
+        />
+        <button type="submit" className="as-send-btn" disabled={busy || !text.trim() || count > MAX} aria-label={t('assistant.send')}>
+          <SendIcon />
+        </button>
+        {count > MAX * 0.8 && (
+          <span id="as-too-long" className={`as-count${count > MAX ? ' is-over' : ''}`}>
+            {count > MAX ? t('assistant.tooLong', { max: MAX }) : `${count}/${MAX}`}
+          </span>
+        )}
+      </form>
+    </div>
+  );
+}

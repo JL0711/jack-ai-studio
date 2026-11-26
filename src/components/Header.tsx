@@ -114,13 +114,17 @@ export function Header() {
             <span className="nav-idx" aria-hidden="true">02</span>
             {t('nav.showcase')}
           </NavLink>
-          <NavLink to="/contact">
+          <NavLink to="/quote">
             <span className="nav-idx" aria-hidden="true">03</span>
+            {t('nav.quote')}
+          </NavLink>
+          <NavLink to="/contact">
+            <span className="nav-idx" aria-hidden="true">04</span>
             {t('nav.contact')}
           </NavLink>
           {signedIn && (
             <NavLink to="/dashboard">
-              <span className="nav-idx" aria-hidden="true">04</span>
+              <span className="nav-idx" aria-hidden="true">05</span>
               {t('nav.dashboard')}
             </NavLink>
           )}

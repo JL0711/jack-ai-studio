@@ -104,7 +104,11 @@ export default function Home() {
               {t('home.ctaShowcase')}
               <ArrowRightIcon />
             </Link>
-            <Link to="/contact" className="btn btn-secondary btn-lg">
+            <Link to="/quote" className="btn btn-secondary btn-lg hero-quote">
+              <span className="led is-live" aria-hidden="true" />
+              {t('home.ctaQuote')}
+            </Link>
+            <Link to="/contact" className="btn btn-ghost btn-lg">
               {t('home.ctaContact')}
             </Link>
           </div>
@@ -236,7 +240,10 @@ export default function Home() {
                 {t('home.ctaContact')}
                 <ArrowRightIcon />
               </Link>
-              <Link to="/showcase" className="btn btn-secondary btn-lg">
+              <Link to="/quote" className="btn btn-secondary btn-lg">
+                {t('home.ctaQuote')}
+              </Link>
+              <Link to="/showcase" className="btn btn-ghost btn-lg">
                 {t('home.ctaShowcase')}
               </Link>
             </div>

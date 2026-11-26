@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { AssistantHost } from '../assistant/AssistantHost';
 import { useAuth } from '../auth/AuthProvider';
 import { useI18n } from '../i18n/I18nProvider';
 import { DemoBanner } from './DemoBanner';
@@ -62,6 +63,7 @@ export function Layout() {
         </div>
       </main>
       <Footer />
+      <AssistantHost />
     </div>
   );
 }

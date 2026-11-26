@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Scramble } from '../components/fx/Scramble';
+import { ArrowRightIcon } from '../components/Icons';
 import { WeChatFallback } from '../components/WeChatFallback';
 import { useI18n } from '../i18n/I18nProvider';
 import type { StringKey } from '../i18n/strings';
@@ -118,7 +120,7 @@ export default function Contact() {
       <div className="container">
         <header className="page-head">
           <span className="kicker">
-            <b>03</b>
+            <b>04</b>
             <span aria-hidden="true">//</span>
             {t('contact.kicker')}
           </span>
@@ -292,6 +294,16 @@ export default function Contact() {
           </section>
 
           <aside className="contact-aside">
+            <div className="card contact-ai">
+              <h2 className="aside-h">
+                <span className="led is-live" aria-hidden="true" /> {t('contact.aiTitle')}
+              </h2>
+              <p className="muted small">{t('contact.aiBody')}</p>
+              <Link to="/quote" className="btn btn-secondary btn-small">
+                {t('contact.aiBtn')}
+                <ArrowRightIcon width={16} height={16} />
+              </Link>
+            </div>
             <div className="card">
               <h2 className="aside-h">{t('home.hoursTitle')}</h2>
               <ReplyNow />

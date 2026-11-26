@@ -22,6 +22,7 @@ const ProjectPage = fromDashboard((m) => m.ProjectPage);
 const Inbox = fromDashboard((m) => m.Inbox);
 const Users = fromDashboard((m) => m.Users);
 const Login = lazy(() => import('./pages/Login'));
+const Quote = lazy(() => import('./pages/Quote'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 /** After a password-reset email link, send the user to the "set new password" page. */
@@ -48,6 +49,7 @@ export default function App() {
                 <Route index element={<Home />} />
                 <Route path="showcase" element={<Showcase />} />
                 <Route path="showcase/:slug" element={<ShowcaseDetail />} />
+                <Route path="quote" element={<Quote />} />
                 <Route path="contact" element={<Contact />} />
                 <Route path="login" element={<Login />} />
                 <Route path="reset-password" element={<ResetPassword />} />

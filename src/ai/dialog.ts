@@ -184,12 +184,10 @@ function understandingLead(s: ChatState, est: Estimate): string {
       : est.modify
         ? T(lang, `你想改一个现有的${def.short.zh}`, `you want changes to an existing ${def.short.en}`)
         : T(lang, `你想做一个${def.short.zh}`, `you want ${/^[aeiou]/i.test(def.short.en) ? 'an' : 'a'} ${def.short.en}`);
-  const feats = featureNames(est, req, lang).slice(0, 4);
-  const qty = quantityBits(req, lang);
-  let line = T(lang, `明白了：${what}`, `Got it: ${what}`);
-  if (feats.length) line += T(lang, `，包括${joinList(feats, 'zh')}`, `, with ${joinList(feats, 'en')}`);
-  if (qty.length) line += T(lang, `（${qty.join('，')}）`, ` (${qty.join(', ')})`);
-  line += T(lang, '。我在网页里按价目表算了一下：', '. Here is how it adds up, calculated right here in the page:');
+  const counted = [...featureNames(est, req, lang).slice(0, 4), ...quantityBits(req, lang)];
+  let line = T(lang, `明白了：${what}。`, `Got it: ${what}.`);
+  if (counted.length) line += T(lang, `算进去的有：${counted.join('、')}。`, ` Counted in: ${counted.join(', ')}.`);
+  line += T(lang, '\n按价目表在网页里算了一下：', '\nHere is how it adds up, calculated right here in the page:');
   return line;
 }
 

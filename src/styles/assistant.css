@@ -1,0 +1,108 @@
+/* The floating "AI 估价" button (main bundle; the chat's own styles are in
+   src/assistant/chat.css, which loads with the chat). */
+
+.as-launcher {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px 10px 10px;
+  font: inherit;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  box-shadow: var(--shadow-lift);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, transform 0.25s var(--ease-out), background 0.2s;
+  animation: as-launch-in 0.6s var(--ease-out) 1.2s backwards;
+}
+.as-launcher:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.as-launcher-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--signal);
+  color: var(--on-signal);
+}
+.as-launcher-text {
+  display: grid;
+  line-height: 1.25;
+}
+.as-launcher-text b {
+  font-family: var(--font-display);
+  font-weight: 680;
+  font-stretch: 108%;
+  font-size: 0.95rem;
+}
+.as-launcher-text span {
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+.as-launcher-led {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background: var(--signal);
+  box-shadow: 0 0 10px var(--signal-glow);
+  animation: brand-pulse 3.6s ease-in-out infinite;
+}
+.as-launcher.has-chat .as-launcher-led {
+  background: var(--live);
+  box-shadow: 0 0 10px var(--live);
+}
+@keyframes as-launch-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+/* Phones: a compact button that doesn't cover content. */
+@media (max-width: 640px) {
+  .as-launcher {
+    padding: 6px;
+    gap: 0;
+  }
+  .as-launcher-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .as-launcher-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .as-launcher,
+  .as-launcher-led {
+    animation: none;
+  }
+}
+/* While the chat covers the screen on a phone, the page behind stays put. */
+html.as-locked,
+html.as-locked body {
+  overflow: hidden;
+}
+@media print {
+  .as-launcher {
+    display: none;
+  }
+}

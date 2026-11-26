@@ -559,7 +559,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     signals: [['生成word', 2.5], ['生成 word', 2.5], ['生成pdf', 2.5], ['生成 pdf', 2.5], ['生成合同', 2.5], ['生成报告', 2.2], ['生成证书', 2.5], ['证书', 1.5], ['出报告', 2], ['合同模板', 2.2], [W('generate (word|pdf|docx|excel|reports?|invoices?|certificates?|contracts?)'), 2.5], [W('pdf generation'), 2.5], [W('certificates?'), 1.5], [W('templates?'), 1]],
   },
   schedule: {
-    label: { zh: '定时自动运行', en: 'Runs on a schedule' },
+    label: { zh: '定时自动运行', en: 'Scheduled runs' },
     hours: [3, 6],
     priority: 2,
     signals: [['定时', 2.5], ['每天自动', 2.5], ['每周自动', 2.5], ['每天跑', 2.2], ['自动运行', 2], ['每天早上', 1.6], ['每天更新', 2.2], ['每日更新', 2.2], ['每天抓', 2.2], ['每小时', 2], [W('scheduled?'), 2], [W('every (day|morning|night|week|hour)'), 2], [W('daily|nightly|hourly'), 1.6], [W('cron'), 2.5]],
@@ -572,7 +572,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     risk: { zh: '微调的效果取决于训练数据的质量和数量。', en: 'Fine-tuning results depend on the quality and amount of training data.' },
   },
   offline: {
-    label: { zh: '完全离线 / 本地模型', en: 'Runs offline on local models' },
+    label: { zh: '完全离线（本地模型）', en: 'Offline on local models' },
     hours: [8, 16],
     priority: 4,
     signals: [['离线', 2.5], ['本地运行', 2.5], ['不联网', 3], ['内网', 2.2], ['数据不出', 3], ['不上云', 3], ['本地部署', 2.5], ['私有化', 2.5], ['保密', 1.4], [W('offline'), 2.5], [W('on[- ]?prem(ise)?'), 2.5], [W('air[- ]?gapped'), 3], [W('local(ly)? (only|hosted|models?)'), 2.5], [W('no internet'), 3], [W('(data|files) (stay|stays|must stay)'), 2.5], [W('self[- ]?hosted'), 2.2]],
