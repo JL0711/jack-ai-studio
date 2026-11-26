@@ -56,26 +56,26 @@ interface FaqRule {
 const RULES: FaqRule[] = [
   {
     id: 'unsupported',
-    zh: /(游戏外挂|外挂|刷单|刷量|刷好评|刷评|刷五星|刷评论|刷粉|水军|批量注册|养号|撞库|盗刷|盗号|黑进|入侵(别人|他人|对方)|破解(密码|软件|账号|版权)|赌博|博彩|彩票|色情|翻墙代理|区块链|nft|加密货币|虚拟币|挖矿|炒币)/,
-    en: /\b(cheats?|hack(?:ing)? into|hack (?:an?|someone|their|his|her|my ex)|(?:get|break|log) into\b[^.]{0,30}\b(?:account|instagram|facebook|email|phone|wechat)|my ex'?s|someone else'?s account|crack(?:ing)? (?:a |the )?(?:password|software|licen[cs]e)|gambling|casino|betting|adult content|porn|nft|crypto(?:currency)?|bitcoin|crypto mining|token launch|blockchain|fake (?:reviews?|accounts?|followers|likes)|bot accounts|mass (?:register|account creation)|spamm?(?:ing|er)?|buy followers)\b/,
+    zh: /(游戏外挂|外挂|刷单|刷量|刷好评|刷评|刷五星|刷评论|刷粉|水军|批量注册|养号|撞库|盗刷|盗号|黑进|入侵(别人|他人|对方)|破解(密码|软件|账号|版权)|赌博|博彩|彩票|色情|翻墙代理|区块链|nft|加密货币|虚拟币|挖矿|炒币|发币|空投|meme币|土狗|币安|以太坊|交易所|(偷看|查看|监控|定位|盗取)[^，,。.]{0,10}(别人|他人|老公|老婆|对象|前任|女朋友|男朋友)[^，,。.]{0,10}(手机|微信|聊天|位置|账号|密码)|(前任|前女友|前男友)[^。.]{0,20}(密码|账号|微信))/,
+    en: /\b(cheats?|hack(?:ing)? into|hack (?:an?|someone|their|his|her|my ex)|(?:get|break|log) into\b[^.]{0,30}\b(?:account|instagram|facebook|email|phone|wechat)|my ex'?s|someone else'?s account|crack(?:ing)? (?:a |the )?(?:password|software|licen[cs]e)|gambling|casino|betting|adult content|porn|nft|crypto(?:currency)?|bitcoin|crypto mining|token launch|blockchain|fake (?:reviews?|accounts?|followers|likes)|bot accounts|mass (?:register|account creation)|spamm?(?:ing|er)?|buy followers|meme ?coins?|solana|ethereum|binance|trading bot|auto-?trad(?:e|es|ing)|airdrops?|presale|my ex\b|changed (?:the|my|our|his|her) password|get (?:me|us) back in(?:to)?|spy on|someone'?s (?:phone|account|messages))\b/,
   },
   // Personal contact data, or platforms whose terms forbid scraping: the scraper kind already says "public, permitted data only".
   {
     id: 'personal_data',
-    zh: /((爬|采集|抓取|抓|收集).{0,12}(手机号|电话号码|身份证|邮箱|微信号|个人信息|联系方式)|(领英|linkedin).{0,20}(爬|采集|抓|邮箱|联系方式|名单))/,
-    en: /(\b(?:scrap(?:e|ing)|crawl(?:ing)?|harvest(?:ing)?|extract(?:ing)?|collect(?:ing)?)\b[^.]{0,40}\b(?:linkedin|emails? addresses|emails|phone numbers|personal (?:data|info)|contact (?:details|info))\b|\blinkedin\b[^.]{0,40}\b(?:scrap(?:e|ing)|leads|emails|profiles)\b)/,
+    zh: /((爬|采集|抓取|抓|收集|导出).{0,16}(手机号|电话号码|身份证|邮箱|微信号|个人信息|联系方式)|(手机号|电话号码|身份证|邮箱|微信号|个人信息|联系方式).{0,16}(爬|采集|抓取|抓下来|抓|收集|导出)|(领英|linkedin).{0,20}(爬|采集|抓|邮箱|联系方式|名单))/,
+    en: /(\b(?:scrap(?:e|er|ers|ing)|crawl(?:er|ing)?|harvest(?:ing)?|extract(?:ing)?|collect(?:ing)?)\b[^.]{0,40}\b(?:linkedin|emails? addresses|emails|phone numbers|personal (?:data|info)|contact (?:details|info))\b|\blinkedin\b[^.]{0,40}\b(?:scrap(?:e|er|ing)|leads|emails|profiles)\b|\b(?:emails?|phone numbers|contact details)\b[^.]{0,40}\b(?:scrap(?:e|er|ing)|crawl(?:er|ing)?|harvest(?:ing)?)\b)/,
   },
-  { id: 'bot', zh: /(机器人吗|是机器人|真人|人工客服|转人工|你是ai|是ai吗|是不是ai|你是谁|和jack聊|找jack本人|jack本人)/, en: /\b(are you (a )?(bot|robot|human|real|ai)|real person|talk to (a )?(human|person|jack)|speak to (a )?(human|person|jack)|who are you)\b/ },
-  { id: 'mvp', zh: /(精简版|简化版|先做核心|小一点的版本|最小版本|mvp|先做一部分|分期做|分两期|便宜点的版本)/, en: /\b(mvp|smaller version|cheaper version|lite version|phase (one|1)|first phase|minimum viable|start small)\b/ },
+  { id: 'bot', zh: /(机器人吗|是机器人|是真人|有真人吗|你是ai|是ai吗|是不是ai|你是谁|和jack聊|找jack本人|jack本人)/, en: /\b(are you (a )?(bot|robot|human|real|ai)|real person|talk to (a )?(human|person|jack)|speak to (a )?(human|person|jack)|who are you)\b/ },
+  { id: 'mvp', zh: /(精简版|简化版|先做核心|小一点的版本|最小版本|\bmvp\b|先做一部分|分期做|分两期|便宜点的版本)/, en: /\b(mvp|smaller version|cheaper version|lite version|phase (one|1)|first phase|minimum viable|start small)\b/ },
   { id: 'discount', zh: /(便宜|打折|优惠|少点|降价|能不能少|贵了|太贵|砍价)/, en: /\b(discount|cheaper|lower (the )?price|too expensive|negotiat|any deal|reduce the (price|cost))\b/ },
   { id: 'first', zh: /(第一版|先看到|多久能看到|什么时候能看到|demo什么时候|看到效果)/, en: /\b(first version|see (something|progress)|when can i see|first demo|early version)\b/ },
-  { id: 'payment', zh: /(怎么付|如何付|付款方式|付款流程|怎么付款|分几次付|分期付|分期|定金多少|要付定金|首付|预付|付钱给你|怎么给钱|尾款|付款节点|支付方式|付费方式)/, en: /\b(how (do|would|should|can) (i|we) pay|payment (terms|schedule|plan|methods?)|upfront|installments?|milestone payments?|pay you|paying you|deposit (do|would) you)\b/ },
+  { id: 'payment', zh: /(全款|一次性付|怎么付|如何付|付款方式|付款流程|怎么付款|分几次付|分期付|分期|定金多少|要付定金|首付|预付|付钱给你|怎么给钱|尾款|付款节点|支付方式|付费方式)/, en: /\b(how (do|would|should|can) (i|we) pay|payment (terms|schedule|plan|methods?)|upfront|installments?|milestone payments?|pay you|paying you|deposit (do|would) you)\b/ },
   { id: 'price', zh: /(多少钱|价格|收费|报价|费用|怎么算钱|贵不贵|价位|时薪|一小时多少|怎么收费)/, en: /\b(how much|price|pricing|cost|rates?|hourly|charge|quote|fees?|expensive)\b/ },
   { id: 'timeline', zh: /(多久|多长时间|几天|几周|工期|周期|什么时候能做完|多快)/, en: /\b(how long|timeline|turnaround|how fast|how quickly|when (can|could|will) (it|you) (be )?(done|finished|ready)|duration|eta)\b/ },
   { id: 'process', zh: /(流程|怎么合作|步骤|合作方式|怎么开始|下一步|如何开始|怎么做)/, en: /\b(process|how do (you|we) (work|start)|how does (it|this) work|next steps?|get started|how to start|workflow with you)\b/ },
   { id: 'availability', zh: /(档期|排期|什么时候能开始|什么时候可以开始|多久能开始|有空吗|有没有空|忙不忙|能接吗|还接单|接不接)/, en: /\b(availability|available to start|when (can|could) you start|are you available|have (the )?capacity|your schedule|(want|like|plan|hope) to start (in|on|next|this|around))\b/ },
   { id: 'hours', zh: /(多久回|多久能回|回复(时间|时段|速度)|回复.{0,2}快|回得快|回复及时|几点(回|上班|在线)|时差|工作时间|什么时候回|联系得上|找得到你|你在线吗|在线吗)/, en: /\b(reply time|response time|how (fast|quickly|soon) (do|will|can) you (reply|respond|answer)|time ?zones?|working hours|office hours|online now|reach you|when do you reply)\b/ },
-  { id: 'privacy', zh: /(保密|nda|隐私|数据安全|泄露|泄密|安全吗|数据会不会|资料安全)/, en: /\b(nda|confidential(ity)?|privacy|secure|security|data (safe|safety|protection|leak)|gdpr|leak)\b/ },
+  { id: 'privacy', zh: /(保密|隐私|数据安全|泄露|泄密|安全吗|数据会不会|资料安全)/, en: /\b(nda|confidential(ity)?|privacy|secure|security|data (safe|safety|protection|leak)|gdpr|leak)\b/ },
   { id: 'source', zh: /(源码|源代码|代码归|版权|知识产权|代码给我|交付代码)/, en: /\b(source code|ownership of the code|own the code|ip rights|intellectual property|who owns|hand ?over (the )?(code|source|repo))\b/ },
   { id: 'maintenance', zh: /(维护|售后|出了问题|出问题怎么办|保修|长期支持|以后改)/, en: /\b(maintenance|maintain|support after|after (launch|delivery)|bugs? after|warranty|ongoing support|retainer|updates? later)\b/ },
   { id: 'revisions', zh: /(修改几次|改几次|返工|不满意|改到满意|无限修改)/, en: /\b(revisions?|changes later|not happy|unlimited changes|rework)\b/ },
@@ -83,7 +83,7 @@ const RULES: FaqRule[] = [
   { id: 'contract', zh: /(签合同|签约|合同怎么|有没有合同|要不要合同|需要签|正式合同|合作协议|签协议)/, en: /\b(sign (a|the) contract|contract to sign|written agreement|do you (use|sign) (a )?contracts?)\b/ },
   { id: 'meeting', zh: /(开会|视频会议|视频通话|打个电话|通个电话|电话沟通|电话聊|语音聊|见个面|见面聊|当面聊|面谈|腾讯会议|约个时间|约时间聊)/, en: /\b((schedule|book|have|set up|hop on|jump on) a (quick )?(call|meeting|zoom)|video call|phone call with|call with you|meet (in person|you)|zoom|google meet|teams call)\b/ },
   { id: 'longterm', zh: /(长期|兼职|全职|驻场|招聘|入职|包月合作|长期合作)/, en: /\b(long[- ]term|part[- ]time|full[- ]time|hire you|employ|contract role|ongoing work|monthly retainer)\b/ },
-  { id: 'team', zh: /(你们团队|你们有几个人|你一个人|一个人做|外包公司|公司规模|就你一个)/, en: /\b(your team|how many (people|developers)|one[- ]person|solo|agency|company size|just you|by yourself|work alone)\b/ },
+  { id: 'team', zh: /(你们团队|你们有几个人|你一个人|一个人做|外包公司|公司规模|就你一个)/, en: /\b(your team|how many (people|developers)|one[- ]person|solo|are you an agency|your agency|company size|just you|by yourself|work alone)\b/ },
   { id: 'hardware', zh: /(显卡|配置|电脑要求|服务器配置|显存|内存多大|什么电脑)/, en: /\b(hardware|gpu|specs|vram|ram|what (computer|machine|server))\b/ },
   { id: 'models', zh: /(什么模型|哪个模型|用gpt|gpt还是|模型选|deepseek还是|qwen还是|开源模型还是)/, en: /\b(which model|what model|gpt or|llama or|claude or|open[- ]source or|model choice)\b/ },
   { id: 'invoice', zh: /(开发票|开票|能开发票|提供发票|要发票|发票怎么|开收据|收据怎么)/, en: /\b((send|issue|provide|give) (me |us )?(an? )?(invoice|receipt)|invoice me|tax invoice|vat invoice)\b/ },
@@ -100,9 +100,13 @@ const RULES: FaqRule[] = [
 
 /** Which FAQ a message asks, or null. */
 export function matchFaq(text: string): FaqId | null {
+  return matchFaqs(text)[0] ?? null;
+}
+
+/** Every FAQ a message asks, in rule order ("怎么收费？要先付全款吗？" → price, payment). */
+export function matchFaqs(text: string): FaqId[] {
   const { low } = prepare(text);
-  for (const r of RULES) if (r.zh.test(low) || r.en.test(low)) return r.id;
-  return null;
+  return RULES.filter((r) => r.zh.test(low) || r.en.test(low)).map((r) => r.id);
 }
 
 export interface FaqContext {

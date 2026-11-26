@@ -406,3 +406,114 @@ describe('wording', () => {
     expect(turns[1].lang).toBe('zh');
   });
 });
+
+// A second set, written later by someone who had seen neither the parser nor the set above.
+describe('unseen briefs', () => {
+  const est = (turn: Turn) => (turn.blocks.find((b) => b.t === 'estimate') as { est: { usd: number[] } } | undefined)?.est;
+
+  it('declines crypto trading, account break-ins and personal-data scraping, however it is put', () => {
+    for (const [lang, text] of [
+      ['en', 'Need a Telegram bot that auto-trades memecoins on Solana when whales buy. Budget flexible.'],
+      ['en', 'My ex changed the password on our shared Instagram, can you get me back in? I can pay well.'],
+      ['zh', '帮我写个爬虫，把某招聘网站上所有求职者的手机号和邮箱都抓下来，我要做营销。'],
+    ] as [Lang, string][]) {
+      const { turns } = chat(lang, [text]);
+      expect(est(turns[0]), text).toBeUndefined();
+      expect(textOf(turns[0]), text).toMatch(/不接|不在 Jack|isn't something Jack takes on/);
+    }
+    const { turns } = chat('en', ['Hi, I need a scraper for LinkedIn.', 'I want names, emails and phone numbers of all HR managers in Germany.']);
+    expect(textOf(turns[1])).toMatch(/LinkedIn/);
+  });
+
+  it('"转人工" in a chatbot brief is a feature, and "Monday" is not an NDA', () => {
+    const zh = chat('zh', ['想在官网上加个AI客服，能回答客户关于产品和售后的常见问题，大概有100多个常见问题，回答不了的转人工。']);
+    expect(est(zh.turns[0])).toBeDefined();
+    const en = chat('en', ["We're a small manufacturer. Every Monday someone spends 4 hours copying numbers from 15 supplier spreadsheets into our master production plan. Can this be automated? Low four figures is fine."]);
+    expect(textOf(en.turns[0])).not.toMatch(/NDA|local/);
+    expect(en.state.req.kind).toBe('automation');
+    expect(en.state.req.budget).toMatchObject({ min: 1000, max: 3000, currency: 'USD' });
+  });
+
+  it('a broken checkout is a rush fix; a footer phone number is a small change', () => {
+    const r = read('Our Shopify store checkout broke after a theme update — customers get stuck on the payment step. Needed this fixed yesterday!');
+    expect(r.kind).toBe('fix');
+    expect(r.rush).toBe(true);
+    const footer = read("can you just change the phone number in the footer of my website? it's a wix site");
+    expect(footer.modify).toBe(true);
+    expect(footer.features.integrations).toBeUndefined();
+    expect(estimate(footer)!.usd[1]).toBeLessThanOrEqual(700);
+  });
+
+  it('local models "like ChatGPT" on their own GPUs are a local AI setup, not a platform', () => {
+    const r = read('公司想在内网部署一个大模型，类似ChatGPT那种，员工可以用来写文案、翻译，但是数据不能出公司。我们有台服务器带两张4090显卡。');
+    expect(r.kind).toBe('local_ai');
+    expect(r.hardware).toBe('have');
+    expect(r.scale).toBeUndefined();
+  });
+
+  it('brand names joined by 和 are not "like Taobao"; "the next Uber" is', () => {
+    expect(read('我在淘宝和拼多多开店，想每天自动抓一下竞品的价格和销量，做成表格，大概监控200个商品链接。').scale).toBeUndefined();
+    expect(read('I want to build the next Uber but for pet grooming, with AI matching, payments, reviews, live tracking, in 5 countries. How much?').scale).toBe('platform');
+  });
+
+  it('an hour of advice is a consultation', () => {
+    expect(read("I'd like to book a one-hour call to get your opinion on our architecture — we're deciding between building RAG in-house or buying a SaaS.").kind).toBe('consult');
+  });
+
+  it('dates: 下下周三, 下个月中旬, a trade show on March 10, end of Q2', () => {
+    const days = (t: string) => readDeadline(t.toLowerCase(), now).days;
+    expect(days('下下周三之前要一个活动报名页面')).toBe(13);
+    expect(days('下个月中旬之前上线')).toBe(19);
+    expect(days('must be live before the trade show on March 10')).toBe(104);
+    expect(days('target end of q2')).toBe(216);
+  });
+
+  it('"线下收款就行" turns payments off, and a corrected budget wins', () => {
+    const { state } = chat('zh', ['需要一个小程序，做社区团购的', '不要支付功能，线下收款就行。商品大概100个，团长50个左右，预算5万', '不好意思说错了，预算是3万，不是5万']);
+    expect(state.req.features.payments).toBe(false);
+    expect(state.req.quantities.products).toBe(100);
+    expect(state.req.budget?.max).toBe(30000);
+  });
+
+  it('counts said noun-first, and site names that are numbers', () => {
+    const r = read('我们是一家中医诊所，想把过去十年的病历（纸质的，大概两万份）扫描后做成可以检索的系统，医生能按症状搜到类似的病例。病人隐私很重要。');
+    expect(r.kind).toBe('rag');
+    expect(r.quantities.docs).toBe(20000);
+    expect(r.features.ocr).toBe(true);
+    expect(read('做一个卖茶叶的小网店，商品大概50个左右，要能微信支付和支付宝').quantities.products).toBe(50);
+    expect(read('做个chrome插件，在1688商品页面上一键把商品信息采集到我们的表格里。').quantities.products).toBeUndefined();
+  });
+
+  it('reads the rest of the brief', () => {
+    const law = read('Our law firm (12 attorneys) wants an internal tool to search and ask questions over ~8,000 case files and memos. Must stay on our own servers — client confidentiality is non-negotiable. What would something like that cost?');
+    expect(law.kind).toBe('rag');
+    expect(law.quantities.docs).toBe(8000);
+    expect(law.features.offline).toBe(true);
+    expect(read("We record about 40 hours of interviews per month for research (English and Spanish). Need a tool that transcribes them and lets us search the transcripts. Audio can't leave our machines (IRB rules).").features.offline).toBe(true);
+    expect(read('Hi, I run a physiotherapy clinic with 3 locations. We need online booking where patients pick a therapist and time slot, get email/SMS reminders, and we can manage schedules in an admin panel. Budget around 2 grand, ideally live by end of January.').budget).toMatchObject({ max: 2000, currency: 'USD' });
+    expect(read('We sell spare parts on WooCommerce (about 4,000 SKUs) and want to move to Shopify without losing SEO. Can you handle the migration and product import?').features.seo).toBe(true);
+    expect(read('Hello sir, we are restaurant in Dubai, we want website with menu and online order for delivery, also customer can pay by card. Please tell me price and how many days you need.').features.payments).toBe(true);
+    expect(read('我们是一个公益组织，想做个简单官网，介绍项目、展示活动照片、接受捐款。预算不多，一万以内。').features.payments).toBe(true);
+    const school = read("I'm the IT coordinator at a private high school. We need a simple system for teachers to log detentions and parents to get notified by email. About 600 students, 40 teachers. Not urgent — sometime next semester.");
+    expect(school.kind).toBe('webapp');
+    expect(school.rush).toBeFalsy();
+    expect(read('Real estate site, ~100 listings, map search, agent logins. 5k budget. ASAP.').kind).toBe('webapp');
+    expect(read("Small accounting practice in Leeds. We'd like an AI assistant that answers staff questions using our internal procedures manual (about 300 pages). Budget £1,000–£1,500, would love it before tax season in January.").quantities.pages).toBeUndefined();
+  });
+
+  it('answers two questions asked together', () => {
+    const { turns } = chat('zh', ['你们是怎么收费的？要先付全款吗？']);
+    expect(textOf(turns[0])).toMatch(/每小时/);
+    expect(textOf(turns[0])).toMatch(/里程碑/);
+  });
+
+  it('"Actually, can we also…" adds to the project instead of replacing it', () => {
+    const { state } = chat('en', [
+      'We need an internal tool to track equipment rentals for our construction company.',
+      'About 300 pieces of equipment, 15 staff users. Oh and it should send reminders when a rental is overdue.',
+      "Budget's around $3k. Actually, can we also get a simple mobile-friendly view for the guys on site?",
+    ]);
+    expect(state.req.kind).toBe('webapp');
+    expect(state.req.features.notifications).toBe(true);
+  });
+});

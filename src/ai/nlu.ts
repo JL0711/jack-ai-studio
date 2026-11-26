@@ -125,7 +125,7 @@ const ZH_PIVOT = /(但|可是|不过|而是|还要|得要)/;
 // Longest phrases first: "no need for" must not stop at "no" (and leave "need" to look like a pivot).
 const NEG_BEFORE_EN =
   /\b(no need (?:for|to)|don't need|do not need|doesn't need|does not need|don't want|do not want|won't need|will not need|can't use|cannot use|can not use|not allowed to use|don't use|do not use|not including|without|excluding|except|remove|skip|never|no)\b([^.!?;]{0,30})$/;
-const EN_PIVOT = /\b(but|however|though|although|also|plus|need|want|must|should)\b/;
+const EN_PIVOT = /\b(but|however|though|although|also|plus|need|want|must|should|losing|breaking|hurting|affecting|harming|damaging|dropping|sacrificing|changing)\b/;
 const NEG_AFTER_EN = /^\s*(?:is|are)?\s*(?:not needed|not required|unnecessary|not necessary|isn't needed|aren't needed|can wait)/;
 const UNSURE_ZH = /(要不要|需不需要|用不用|做不做|是不是|不知道|不确定|看情况|还没想好)[^，,。.!！?？]{0,8}$/;
 const UNSURE_EN = /\b(not sure (?:if|whether|about)|don't know (?:if|whether)|maybe|might|whether|possibly|perhaps)\b[^.!?;,]{0,20}$/;
@@ -194,6 +194,12 @@ export function parseZhNumber(s: string): number | null {
     一两千: 1500, 两三千: 2500, 三五千: 4000, 一两万: 15000, 两三万: 25000, 三五万: 40000, 几: 3, 一两: 2, 两三: 3, 三五: 4,
   };
   if (rough[s] !== undefined) return rough[s];
+  // "二十几" ≈ 25, "三百多" handled by the caller's 多.
+  const approx = s.match(/^([零〇一二两俩三四五六七八九十百千万]+[十百千万])几$/);
+  if (approx) {
+    const base = parseZhNumber(approx[1]);
+    if (base !== null) return base + ZH_UNITS[approx[1].slice(-1)] / 2;
+  }
   if (!/^[零〇一二两俩三四五六七八九十百千万]+$/.test(s)) return null;
   // Spoken shorthand: "一万五" = 15,000, "两千五" = 2,500, "三百二" = 320.
   const trail = s.match(/^(.*[百千万])([一二两三四五六七八九])$/);
@@ -236,6 +242,8 @@ function parseZhRange(s: string): [number, number] | null {
 export function parseNumber(raw: string): number | null {
   const s = raw.trim().toLowerCase().replace(/\s+/g, '');
   if (!s) return null;
+  const grand = s.match(/^(\d+(?:\.\d+)?)grand$/);
+  if (grand) return Number(grand[1]) * 1000;
   const m = s.match(/^(\d+(?:,\d{3})*(?:\.\d+)?|\d*\.\d+)(k|w|千|万|百|m)?$/);
   if (m) {
     const n = Number(m[1].replace(/,/g, ''));
@@ -268,8 +276,8 @@ function allMatches(low: string, re: RegExp): RegExpMatchArray[] {
   return [...low.matchAll(new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`))];
 }
 
-/** "一个客服机器人" / "a chatbot": the article is not a count. */
-const ARTICLE = /^(一|a|an|one)$/;
+/** "一个客服机器人" / "a chatbot": the article is not a count; "1688" / "12306" are site names. */
+const ARTICLE = /^(一|a|an|one|1688|12306|360|58|51)$/;
 
 function firstQuantity(low: string, zh: RegExp, en: RegExp, skipArticle = true): number | undefined {
   const tries: [RegExp, (s: string) => number | null][] = [
@@ -290,20 +298,28 @@ function firstQuantity(low: string, zh: RegExp, en: RegExp, skipArticle = true):
 // ---------- quantities ----------
 
 const DOCS_ZH = new RegExp(`${NUM}\\s*(?:多|余|来)?\\s*(?:份|个|篇|本|套)?\\s*(?:pdf|文件|文档|合同|资料|论文|手册|报告|word|制度|案例|标书)`, 'i');
-const DOCS_EN = new RegExp(`\\b${EN_NUM}\\+?\\s*(?:(?:word|pdf|excel|text|scanned)\\s+)?(?:pdfs?|documents?|docs|files|contracts|manuals|papers|reports|policies)\\b`, 'i');
+const DOCS_EN = new RegExp(`\\b${EN_NUM}\\+?\\s*(?:[a-z-]+\\s+)?(?:pdfs?|documents?|docs|files|contracts|manuals|papers|reports|policies|memos|records|pages of documents)\\b`, 'i');
 const PAGES_ZH = new RegExp(`${NUM}\\s*(?:个)?\\s*(?:页面|网页|板块|栏目)`);
 const PAGES_ZH2 = new RegExp(`${NUM}\\s*(?:个)?\\s*页(?!\\s*(?:pdf|文档|的pdf|的文档|的合同|word))`, 'i');
 const PAGES_EN = new RegExp(`\\b${EN_NUM}\\s*(?:pages?|sections?|screens?)\\b(?![- ]*(?:pdf|document|doc))`, 'i');
 const USERS_ZH = new RegExp(
-  `${NUM}\\s*(?:多|余|来)?\\s*(?:个|名|位)?\\s*(?:用户|员工|学员|会员|客户|老师|学生|成员|队员|销售|同事|律师|医生|护士|会计|工程师|设计师|客服|店员|家长|志愿者|人在用|人使用|人用|人(?![民工事力]))`,
+  `${NUM}\\s*(?:多|余|来)?\\s*(?:个|名|位)?\\s*(?:用户|员工|学员|会员|老师|学生|成员|队员|销售|同事|律师|医生|护士|会计|工程师|设计师|客服|店员|家长|志愿者|人在用|人使用|人用|人(?![民工事力]))`,
 );
 // "十几个律师用" / "五十名员工在用": N + measure word + who + 用
 const USERS_ZH2 = new RegExp(`${NUM}\\s*(?:多|余|来)?\\s*(?:个|名|位)\\s*[\\u4e00-\\u9fff]{1,3}?(?:在)?(?:用|使用)`);
-const USERS_EN = new RegExp(`\\b${EN_NUM}\\+?\\s*(?:users?|people|employees|staff|members|customers|students|clients|seats|team members|persons)\\b`, 'i');
+const USERS_EN = new RegExp(
+  `\\b${EN_NUM}\\+?\\s*(?:users?|people|employees|staff|members|customers|students|clients|seats|team members|persons|drivers|agents|teachers|parents|patients|attorneys|lawyers|doctors|nurses|technicians|workers|volunteers|couriers|accountants|therapists)\\b`,
+  'i',
+);
 const LANGS_ZH = /([一二两三四五六七八九十几\d]+)\s*(?:种|门|个)?\s*语言/;
 const LANGS_EN = new RegExp(`\\b${EN_NUM}\\s+languages\\b`, 'i');
-const PRODUCTS_ZH = new RegExp(`${NUM}\\s*(?:多|余|来)?\\s*(?:个|款|件)?\\s*(?:商品|产品|sku)`, 'i');
+const PRODUCTS_ZH = new RegExp(`${NUM}\\s*(?:多|余|来)?\\s*(?:个|款|件|种|样)?\\s*(?:商品|产品|sku|水果|货品)`, 'i');
 const PRODUCTS_EN = new RegExp(`\\b${EN_NUM}\\+?\\s*(?:products|skus|items)\\b`, 'i');
+// Casual Chinese often puts the noun first: "商品大概50个", "病历（纸质的，大概两万份）".
+const AROUND = '(?:大概|大约|约|差不多|有|一共|总共|共)?';
+const PRODUCTS_ZH2 = new RegExp(`(?:商品|产品|sku|水果|货品)[^，,。.!?\\d]{0,4}?${AROUND}\\s*${NUM}\\s*(?:多|余|来)?\\s*(?:个|款|件|种|样)`, 'i');
+const DOCS_ZH2 = new RegExp(`(?:pdf|文件|文档|合同|资料|病历|论文|手册|报告|案例|标书|判决书)[^。.!?\\d]{0,12}?${AROUND}\\s*${NUM}\\s*(?:多|余|来)?\\s*(?:份|个|篇|本|套)`, 'i');
+const USERS_ZH3 = new RegExp(`(?:用户|员工|会员|学员|学生|老师|人数)[^，,。.!?\\d]{0,4}?${AROUND}\\s*${NUM}\\s*(?:多|余|来)?\\s*(?:个|名|位|人)`);
 const ROLES_ZH = new RegExp(`${NUM}\\s*(?:种|类|个)\\s*(?:角色|身份|用户类型|权限)`);
 const ROLES_EN = new RegExp(`\\b${EN_NUM}\\s+(?:roles|user types|kinds of users|types of users)\\b`, 'i');
 
@@ -330,10 +346,10 @@ function countNamed(low: string, names: string[]): number {
 const CUR_BEFORE = '(us\\$|usd|\\$|¥|rmb|cny|人民币|€|eur|£|gbp)?';
 // Units stick to the number ("5k", "3万", "1万5"); "2 weeks" is not 20,000 and "5 kinds" not 5,000.
 const AMOUNT =
-  '(\\d+(?:,\\d{3})*(?:\\.\\d+)?(?:(?:k|w)(?![a-z])|\\s?(?:千|万)(?:\\d(?!\\d))?)?|[一二两三四五六七八九十百千万几]*[十百千万][一二两三四五六七八九]?)';
+  '(\\d+(?:,\\d{3})*(?:\\.\\d+)?(?:(?:k|w)(?![a-z])|\\s?(?:千|万)(?:\\d(?!\\d))?|\\s?grand\\b)?|[一二两三四五六七八九十百千万几]*[十百千万][一二两三四五六七八九]?)';
 // The low end of a range may leave its unit to the high end: "三到五万", "2-3千".
 const AMOUNT_LO = '(\\d+(?:,\\d{3})*(?:\\.\\d+)?(?:(?:k|w)(?![a-z])|\\s?(?:千|万))?|[一二两三四五六七八九十百千万几]+)';
-const CUR_AFTER = '\\s*(美元|美金|刀|dollars?|bucks|usd|元|块钱|块|人民币|rmb|cny|欧元|euros?|eur|英镑|pounds?|gbp)?';
+const CUR_AFTER = '\\s*(美元|美金|刀|dollars?|bucks|usd|元|块钱|块|人民币|rmb|cny|欧元|euros?|eur|英镑|pounds?|gbp|grand)?';
 const MONEY_RANGE = new RegExp(`${CUR_BEFORE}\\s*${AMOUNT_LO}${CUR_AFTER}\\s*(?:-|–|—|~|～|到|至|to)\\s*${CUR_BEFORE}\\s*${AMOUNT}${CUR_AFTER}`, 'gi');
 const MONEY_ONE = new RegExp(`${CUR_BEFORE}\\s*${AMOUNT}${CUR_AFTER}`, 'gi');
 /** Words that make a bare number a budget (with a currency, no word is needed). */
@@ -350,6 +366,7 @@ function currencyOf(...marks: (string | undefined)[]): Currency | null {
   for (const m of marks) {
     if (!m) continue;
     const s = m.toLowerCase();
+    if (s === 'grand') continue;
     if (/€|eur|欧元/.test(s)) return 'EUR';
     if (/£|gbp|英镑|pound/.test(s)) return 'GBP';
     if (/us\$|usd|\$|美元|美金|刀|dollar|buck/.test(s)) return 'USD';
@@ -373,9 +390,11 @@ export function readBudget(low: string, lang: Lang): BudgetRead | undefined {
     const wide = sentenceBefore(low, m.index, 36);
     const after = low.slice(end, end + 16);
     const budgetWord = /预算|budget/i.test(wide) || /^\s*(的)?(预算|budget)/i.test(after);
+    // "预算是3万，不是5万": the corrected-away amount isn't the budget.
+    if (/(不是|而不是|\bnot|instead of|rather than)\s*(us\$|\$|¥|€|£)?\s*$/i.test(near)) return;
     // A price inside the brief ("商品单价50到200元", "tickets cost $25 each") is not the budget.
     if ((PER_UNIT_AFTER.test(after) || PER_UNIT_BEFORE.test(near)) && !budgetWord) return;
-    const context = budgetWord || BUDGET_WORDS.test(wide);
+    const context = budgetWord || BUDGET_WORDS.test(wide) || /grand/.test(m[0]);
     if (!cur && !context) return;
     // Bare small numbers are usually counts, not money.
     if (!cur && max < 100) return;
@@ -413,6 +432,13 @@ export function readBudget(low: string, lang: Lang): BudgetRead | undefined {
     if (!cur && (COUNT_AFTER_ZH.test(after) || COUNT_AFTER_EN.test(after))) continue;
     consider(m, range ? range[0] : n, n, cur);
   }
+  // "low four figures is fine": $1,000–3,000 (mid 4–6k, high 7–9k; five figures 10–30k).
+  const fig = low.match(/\b(low|mid|high)?[- ]?(four|five)[- ]figures?\b/);
+  if (fig) {
+    const four = fig[2] === 'four';
+    const band: [number, number] = fig[1] === 'low' ? (four ? [1000, 3000] : [10000, 30000]) : fig[1] === 'mid' ? (four ? [4000, 6000] : [40000, 60000]) : fig[1] === 'high' ? (four ? [7000, 9900] : [70000, 99000]) : four ? [1000, 9900] : [10000, 99000];
+    candidates.push({ money: { min: band[0], max: band[1], currency: 'USD' }, assumed: false, raw: fig[0], context: true });
+  }
   if (!candidates.length) return undefined;
   // Prefer an amount said as a budget, then one with a currency, then the largest.
   candidates.sort((x, y) => Number(y.context) - Number(x.context) || Number(x.assumed) - Number(y.assumed) || y.money.max - x.money.max);
@@ -431,9 +457,9 @@ export function toUsd(m: Money, cnyPerUsd: number = PRICING.cnyPerUsd): [number,
 const DURATION_ZH = /([\d.]+|[一二两三四五六七八九十半几]+)\s*(个)?\s*(半)?\s*(天|日|周|星期|礼拜|个月|月)\s*(内|之内|以内|完成|上线|交付|做完|搞定|左右|里|就要|必须)/;
 const DURATION_EN = new RegExp(`\\b(?:within|in|under|less than|by|needs? to be done in)\\s+(?:about |around )?${EN_NUM}\\s+(days?|weeks?|months?)\\b`, 'i');
 const RELAXED =
-  /(不急|不着急|慢慢来|时间充裕|时间宽裕|不赶时间|不赶|没有截止|没有deadline|\bno rush\b|\bno hurry\b|\bnot in a (?:rush|hurry)\b|\bno (?:hard |fixed |strict )?deadline\b|\b(?:timeline|schedule|deadline|timing|dates?) (?:is |are )?flexible\b|\bflexible (?:timeline|deadline|schedule|timing)\b|\bwhenever (?:you(?:'re| are)? ready|it'?s ready|works|you can)\b|\btake your time\b)/i;
+  /(不急|不着急|慢慢来|时间充裕|时间宽裕|不赶时间|不赶|没有截止|没有deadline|\bno rush\b|\bno hurry\b|\bnot in a (?:rush|hurry)\b|\bno (?:hard |fixed |strict )?deadline\b|\b(?:timeline|schedule|deadline|timing|dates?) (?:is |are )?flexible\b|\bflexible (?:timeline|deadline|schedule|timing)\b|\bwhenever (?:you(?:'re| are)? ready|it'?s ready|works|you can)\b|\btake your time\b|\bnot urgent\b|\bno urgency\b|不急着|不是很急|不太急)/i;
 const RUSH =
-  /(尽快|越快越好|加急|很急|比较急|特别急|非常急|急用|急需|急[!！]|马上要|马上就要|今天要|明天要|这周要|本周要|\basap\b|\burgent(?:ly)?\b|\brush\b|as soon as possible|as fast as possible|by tomorrow|this week|make (?:it )?fast)/i;
+  /(尽快|越快越好|加急|很急|比较急|特别急|非常急|急用|急需|急[!！]|马上要|马上就要|今天要|明天要|这周要|本周要|\basap\b|\burgent(?:ly)?\b|\brush\b|as soon as possible|as fast as possible|by tomorrow|this week|make (?:it )?fast|\byesterday\b)/i;
 const MONTHS_EN = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const ZH_MONTH: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10, 十一: 11, 十二: 12 };
 const WEEKDAYS_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -546,8 +572,8 @@ export function readDeadline(low: string, now: Date): { days?: number; rush?: bo
   }
 
   // 4. A weekday: "下周五前", "周五之前", "by next Friday".
-  const wz = low.match(/(下|这|本)?\s*(?:个)?\s*(?:周|星期|礼拜)([一二三四五六日天])\s*(前|之前|以前|上线|完成|交付|能|要|内)?/);
-  if (wz && (wz[1] || wz[3])) set(daysToWeekday(now, WEEKDAY_ZH[wz[2]], wz[1] === '下'));
+  const wz = low.match(/(下下|下|这|本)?\s*(?:个)?\s*(?:周|星期|礼拜)([一二三四五六日天])\s*(前|之前|以前|上线|完成|交付|能|要|内)?/);
+  if (wz && (wz[1] || wz[3])) set(daysToWeekday(now, WEEKDAY_ZH[wz[2]], wz[1] === '下' || wz[1] === '下下') + (wz[1] === '下下' ? 7 : 0));
   const we = low.match(/\b(by|before|until|due|on)?\s*(next|this)?\s*(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/);
   if (we && (we[1] || we[2])) set(daysToWeekday(now, WEEKDAYS_EN.indexOf(we[3]), we[2] === 'next'));
 
@@ -566,7 +592,18 @@ export function readDeadline(low: string, now: Date): { days?: number; rush?: bo
     set(daysUntil(now, 0, 1));
   }
 
+  // A month and day anywhere in a sentence about timing: "before the trade show on March 10".
+  if (/\b(before|by|until|due|deadline|launch|live|ready|show|event|opening)\b/.test(low)) {
+    const md = low.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:uary|ruary|ch|il|e|y|ust|t|tember|ober|ember)?\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/);
+    if (md) set(daysUntil(now, MONTHS_EN.indexOf(md[1]), Number(md[2])));
+  }
+
   // 7. Relative: 下个月底 before 月底, 下个月 before 月.
+  const nextPart = low.match(/下个?月(初|上旬|中旬|中|下旬)/);
+  if (nextPart) {
+    const day = { 初: 5, 上旬: 10, 中旬: 15, 中: 15, 下旬: 25 }[nextPart[1]] ?? 15;
+    set(daysTo(now, new Date(now.getFullYear(), now.getMonth() + 1, day)));
+  }
   if (/下个?月底|下个?月末|end of next month/.test(low)) set(daysTo(now, endOfMonth(now.getFullYear(), now.getMonth() + 1)));
   if (/下周|下个星期|下礼拜|next week/.test(low)) set(10);
   if (/这周|本周|this week/.test(low)) set(5);
@@ -591,10 +628,10 @@ const NEEDS_DESIGN = /(没有设计|需要设计|帮我设计|从零设计|没�
 const NO_DESIGN_WORK = /(不需要设计|不用设计|不要设计|不需要帮我设计|不用帮我设计|设计不用|设计不需要|\bno design (?:needed|required|work)\b|\b(?:don't|do not) need (?:a |any )?design|\bdesign (?:is )?not needed\b)/i;
 /** "We already have a GPU server", "有显卡服务器", "我们用的是Mac". */
 const HW_HAVE =
-  /((有|已经有|已有|配了|买了|自己有|公司有|我们有)[^，,。.!?]{0,6}(显卡|gpu|服务器|工作站|rtx|4090|3090|5090|a100|h100|mac ?studio)|显卡服务器|gpu ?服务器|用的是\s*(mac|macbook|imac|mac ?studio|windows)|\b(we|i) (already )?(have|own|got|run)\b[^.!?]{0,30}\b(gpus?|servers?|workstations?|rtx|nvidia|a100|h100|4090|3090|mac ?studio)\b|\bwe('re| are) (on|using) (macs?|macbooks?|mac ?studios?)\b|\bon (our )?(windows|mac) (laptops|pcs|computers|machines)\b)/i;
+  /((\d|一|两|二|三|四)\s*(张|块|台|x|×|\*)\s*(rtx\s*)?(4090|3090|5090|4080|5080|a100|h100|a6000)|(有|已经有|已有|配了|买了|自己有|公司有|我们有)[^，,。.!?]{0,6}(显卡|gpu|服务器|工作站|rtx|4090|3090|5090|a100|h100|mac ?studio)|显卡服务器|gpu ?服务器|用的是\s*(mac|macbook|imac|mac ?studio|windows)|\b(we|i) (already )?(have|own|got|run)\b[^.!?]{0,30}\b(gpus?|servers?|workstations?|rtx|nvidia|a100|h100|4090|3090|mac ?studio)\b|\bwe('re| are) (on|using) (macs?|macbooks?|mac ?studios?)\b|\bon (our )?(windows|mac) (laptops|pcs|computers|machines)\b)/i;
 /** "like Uber for…", "类似美团的外卖平台": a platform big companies built over years. */
 const PLATFORM =
-  /((类似|像|跟|和|仿|学)\s*(美团|淘宝|京东|拼多多|滴滴|饿了么|闲鱼|携程|大众点评|抖音|快手|小红书|知乎|b站|亚马逊|chatgpt)|外卖平台|打车平台|多商户|多商家|商家入驻|撮合平台|\b(?:like|similar to|clone of|copy of|version of)\s+(?:an? )?(?:uber|airbnb|amazon|ebay|etsy|facebook|instagram|tiktok|doordash|fiverr|upwork|netflix|twitter|youtube|linkedin)\b|\b(?:uber|airbnb) (?:for|of)\b|\bmarketplace\b|\bmulti[- ]?vendor\b|\btwo[- ]sided\b)/i;
+  /((类似|像|仿|学)\s*(美团|淘宝|京东|拼多多|滴滴|饿了么|闲鱼|携程|大众点评|抖音|快手|小红书|知乎|b站|亚马逊)|(跟|和)\s*(美团|淘宝|京东|拼多多|滴滴|饿了么|闲鱼|携程|大众点评|抖音|快手|小红书|知乎|b站|亚马逊)\s*(一样|那样|那种|差不多|类似)|\b(?:the next|the new|an?) (?:uber|airbnb|amazon|facebook|instagram|tiktok|doordash)\b|\b(?:uber|airbnb)\s+(?:but\s+)?for\b|外卖平台|打车平台|多商户|多商家|商家入驻|撮合平台|\b(?:like|similar to|clone of|copy of|version of)\s+(?:an? )?(?:uber|airbnb|amazon|ebay|etsy|facebook|instagram|tiktok|doordash|fiverr|upwork|netflix|twitter|youtube|linkedin)\b|\b(?:uber|airbnb) (?:for|of)\b|\bmarketplace\b|\bmulti[- ]?vendor\b|\btwo[- ]sided\b)/i;
 /** "全部重做", "transform … across 12 business units": a programme, not a project. */
 const ENTERPRISE =
   /(全部重做|全部推翻|数字化转型|全面上ai|所有部门|各个部门|全集团|\bdigital transformation\b|\b(?:across|for) (?:all|every|our|\d+|twelve|ten|several|multiple) (?:business units|departments|divisions|subsidiaries)\b|\bentire (?:company|organi[sz]ation|customer journey|business)\b|\benterprise[- ]wide\b)/i;
@@ -604,6 +641,7 @@ const OWN_PLATFORM = /(\b(?:our|my)\s+|我们的?|我的|公司的?)(shopify|woo
 const NEW_BUILD =
   /(想做|新做|做一个|做个|开发一个|搭一个|建一个|重新做|想要|希望能|想自动化|想用ai|帮我(写|做|开发)|能不能做|\bbuild (?:a|an|me|us)\b|\bcreate (?:a|an)\b|\bnew (?:site|website|app|system|store|tool)\b|\bmake (?:a|an|me)\b|\b(?:we|i) (?:want|need|'d like|would like) (?:a|an|to)\b|\blooking for\b|\bautomate\b)/i;
 const ONE_PAGE = /(落地页|着陆页|单页|报名页|活动页|宣传页|\blanding ?page\b|\bone[- ]page\b|\bsingle[- ]page\b|\b(?:sign[- ]?up|registration|event) page\b)/i;
+const PAY_OFFLINE = /(线下收款|线下付款|线下支付|现场付款|到店付款|货到付款|当面付|\bcash on delivery\b|\bpay (?:in person|at the (?:door|venue|store|counter))\b)/i;
 const DATA_DASHBOARD = /(看板|仪表盘|dashboard|可视化|visuali[sz]|charts?|图表)/i;
 
 // ---------- the reader ----------
@@ -695,7 +733,7 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
     const second = ranked[1]?.[1] ?? 0;
     kindConfidence = Math.min(1, (ranked[0][1] / 6) * (second ? Math.min(1, 0.55 + (ranked[0][1] - second) / ranked[0][1]) : 1));
     // "Advice" words are weak; a real project kind wins over them.
-    if (kind === 'consult' && ranked[1] && ranked[1][1] >= 2.5) kind = ranked[1][0];
+    if (kind === 'consult' && ranked[0][1] < 4 && ranked[1] && ranked[1][1] >= 2.5) kind = ranked[1][0];
   }
   let alsoKind: Kind | undefined;
   if (bug) {
@@ -733,8 +771,11 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
     if (hasDesign === true) features.design = false;
     if (hasDesign === false && !bug) features.design = true;
   }
+  if (PAY_OFFLINE.test(t.low)) features.payments = false;
+  // A site where people log in and post their own content (listings, files) is a web app.
+  if (kind === 'site' && ((features.auth && (features.uploads || features.roles || features.admin || features.search || features.maps)) || (features.uploads && features.search))) kind = 'webapp';
   // "卖茶叶的，要能在线付款": selling with payments is a shop, even without the word.
-  if (!kind && features.payments && /(卖|商品|产品|货|\bsell|\bshop\b|\bstore\b)/i.test(t.low)) {
+  if ((!kind || kind === 'site') && features.payments && /(卖|商品|产品|货|\bsell|\bshop\b|\bstore\b)/i.test(t.low)) {
     kind = 'ecommerce';
     kindConfidence = 0.4;
   }
@@ -753,14 +794,15 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
 
   // Quantities
   const quantities: Requirements['quantities'] = {};
-  const docs = firstQuantity(t.low, DOCS_ZH, DOCS_EN);
+  const docs = firstQuantity(t.low, DOCS_ZH, DOCS_EN) ?? firstQuantity(t.low, DOCS_ZH2, /$^/);
   if (docs) quantities.docs = docs;
   let pages = firstQuantity(t.low, PAGES_ZH, PAGES_EN, false) ?? (kind === 'site' ? firstQuantity(t.low, PAGES_ZH2, /$^/, false) : undefined);
   if (!pages && kind === 'site' && ONE_PAGE.test(t.low)) pages = 1;
-  if (pages && pages < 500) quantities.pages = pages;
-  const users = firstQuantity(t.low, USERS_ZH, USERS_EN) ?? firstQuantity(t.low, USERS_ZH2, /$^/);
+  // "a 300-page manual" is not a website with 300 pages.
+  if (pages && pages < 500 && (!kind || ['site', 'webapp', 'ecommerce', 'miniprogram', 'fix'].includes(kind))) quantities.pages = pages;
+  const users = firstQuantity(t.low, USERS_ZH, USERS_EN) ?? firstQuantity(t.low, USERS_ZH2, /$^/) ?? firstQuantity(t.low, USERS_ZH3, /$^/);
   if (users) quantities.users = users;
-  const products = firstQuantity(t.low, PRODUCTS_ZH, PRODUCTS_EN);
+  const products = firstQuantity(t.low, PRODUCTS_ZH, PRODUCTS_EN) ?? firstQuantity(t.low, PRODUCTS_ZH2, /$^/);
   if (products) quantities.products = products;
   const roles = firstQuantity(t.low, ROLES_ZH, ROLES_EN);
   if (roles && roles < 20) {
@@ -881,7 +923,9 @@ export function mergeRequirements(prev: Requirements, p: Parsed, text: string, o
   };
   if (p.kind) {
     const sc = p.kindScores[p.kind] ?? 0;
-    const switching = p.kind !== prev.kind && SWITCH.test(prepare(text).low) && (sc >= 2 || p.kind === 'fix');
+    const low = prepare(text).low;
+    const adding = /\b(also|too|as well|additionally|in addition)\b|还要|另外|再加|顺便|同时也|也要/.test(low);
+    const switching = p.kind !== prev.kind && SWITCH.test(low) && !adding && (sc >= 2 || p.kind === 'fix');
     if (!prev.kind || opts.kindAsked || switching || (p.scale && p.kind !== prev.kind)) {
       if (prev.kind && prev.kind !== p.kind && prev.kind !== 'fix') next.alsoKind = prev.kind;
       next.kind = p.kind;

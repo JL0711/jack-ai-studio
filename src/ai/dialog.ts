@@ -7,7 +7,7 @@ import { DEMOS } from '../demos/registry';
 import { FEATURES, KINDS, PRICING } from './catalog';
 import { estimate, lowerFirst } from './estimate';
 import { fmtCnyRange, fmtDuration, fmtHours, fmtInt, fmtUsdRange, joinList } from './format';
-import { answerFaq, matchFaq, type FaqId } from './knowledge';
+import { answerFaq, matchFaq, matchFaqs, type FaqId } from './knowledge';
 import { detectLang, emptyRequirements, mergeRequirements, parseNumber, prepare, readDuration, toUsd, understand } from './nlu';
 import { SLOTS, nextSlot, slotOption } from './slots';
 import type { Estimate, FeatureId, Kind, Lang, Range, Requirements, SlotId } from './types';
@@ -158,13 +158,16 @@ function moneyText(m: Requirements['budget'], lang: Lang): string {
   return lo < hi * 0.7 || lo === hi ? `$${fmtInt(hi)}` : `$${fmtInt(lo)}–${fmtInt(hi)}`;
 }
 
+/** "1 page", "5 pages". */
+const n_ = (n: number, word: string) => `${fmtInt(n)} ${word}${n === 1 ? '' : 's'}`;
+
 function quantityBits(req: Requirements, lang: Lang): string[] {
   const q = req.quantities;
   const out: string[] = [];
-  if (q.docs) out.push(T(lang, `约 ${fmtInt(q.docs)} 份文件`, `about ${fmtInt(q.docs)} files`));
-  if (q.pages && req.kind === 'site') out.push(T(lang, `约 ${q.pages} 个页面`, `about ${q.pages} pages`));
-  if (q.users) out.push(T(lang, `约 ${fmtInt(q.users)} 人使用`, `about ${fmtInt(q.users)} users`));
-  if (q.products) out.push(T(lang, `约 ${fmtInt(q.products)} 个商品`, `about ${fmtInt(q.products)} products`));
+  if (q.docs) out.push(T(lang, `约 ${fmtInt(q.docs)} 份文件`, `about ${n_(q.docs, 'file')}`));
+  if (q.pages && req.kind === 'site') out.push(T(lang, q.pages === 1 ? '单页' : `约 ${q.pages} 个页面`, q.pages === 1 ? 'one page' : `about ${n_(q.pages, 'page')}`));
+  if (q.users) out.push(T(lang, `约 ${fmtInt(q.users)} 人使用`, `about ${n_(q.users, 'user')}`));
+  if (q.products) out.push(T(lang, `约 ${fmtInt(q.products)} 个商品`, `about ${n_(q.products, 'product')}`));
   if (q.languages && q.languages > 2) out.push(T(lang, `${q.languages} 种语言`, `${q.languages} languages`));
   return out;
 }
@@ -217,7 +220,7 @@ function describeChanges(a: Requirements, b: Requirements, lang: Lang): string[]
   if (qb.products !== qa.products && qb.products) out.push(T(lang, `约 ${fmtInt(qb.products)} 个商品`, `about ${fmtInt(qb.products)} products`));
   if (qb.roles !== qa.roles && qb.roles) out.push(T(lang, `${qb.roles} 类用户`, `${qb.roles} kinds of users`));
   if (JSON.stringify(a.budget) !== JSON.stringify(b.budget) && b.budget) out.push(T(lang, `预算 ${moneyText(b.budget, 'zh')}`, `a budget of ${moneyText(b.budget, 'en')}`));
-  if (a.deadlineDays !== b.deadlineDays && b.deadlineDays) out.push(T(lang, `${b.deadlineDays} 天内完成`, `done within ${b.deadlineDays} days`));
+  if (a.deadlineDays !== b.deadlineDays && b.deadlineDays) out.push(T(lang, `${b.deadlineDays} 天内完成`, `done within ${n_(b.deadlineDays, 'day')}`));
   if (!a.relaxed && b.relaxed) out.push(T(lang, '时间不着急', 'no rush'));
   if (a.hasDesign !== b.hasDesign && b.hasDesign) out.push(T(lang, '已有设计稿', 'designs ready'));
   if (a.hardware !== b.hardware && b.hardware) out.push(b.hardware === 'have' ? T(lang, '已有显卡电脑', 'hardware ready') : T(lang, '需要配置建议', 'hardware advice needed'));
@@ -304,7 +307,7 @@ function deadlineRemark(est: Estimate, lang: Lang): { key: string; text: string 
     return { key: `deadline:short:${d.days}`, text: T(
       lang,
       `**${d.days} 天做完全部来不及。** 这个时间里可以先交付最核心的一部分（约 ${fmtHours(h, 'zh')}的工作量），其余的接着补上。`,
-      `**${d.days} days isn't enough for all of it.** In that time the most essential part (about ${fmtHours(h, 'en')} of work) can be delivered, with the rest following.`,
+      `**${n_(d.days, 'day')} ${d.days === 1 ? "isn't" : "aren't"} enough for all of it.** In that time the most essential part (about ${fmtHours(h, 'en')} of work) can be delivered, with the rest following.`,
     ) };
   }
   if (d?.tight) {
@@ -519,15 +522,23 @@ function estimateTurn(s0: ChatState, before: Requirements, opts: { now: Date; te
   return { state: s, turn: { lang, blocks, chips: all, trace: trace(s, est, opts.text) } };
 }
 
-function faqTurn(s0: ChatState, id: FaqId, now: Date): { state: ChatState; turn: Turn } {
+/** Answers one or two questions ("怎么收费？要先付全款吗？" gets both). */
+function faqTurn(s0: ChatState, idOrIds: FaqId | FaqId[], now: Date): { state: ChatState; turn: Turn } {
   const s = s0;
+  const ids = (Array.isArray(idOrIds) ? idOrIds : [idOrIds]).slice(0, 2);
   const est = estimate(s.req);
-  const a = answerFaq(id, { lang: s.lang, now, estimate: s.estimates > 0 ? est : null, req: s.req });
-  const blocks: Block[] = [{ t: 'text', text: a.text }];
-  if (a.links?.length) blocks.push({ t: 'links', items: a.links });
-  const chips: Chip[] = (a.ask ?? []).map((text, i) => ({ t: 'say', key: `ask-${id}-${i}`, label: text, text }));
-  if (a.contact || s.estimates > 0) chips.push(contactChip(s.lang));
-  const state = remember({ ...s, shown: [...s.shown, `faq-${id}`] }, chips);
+  const blocks: Block[] = [];
+  const chips: Chip[] = [];
+  let contact = s.estimates > 0;
+  for (const id of ids) {
+    const a = answerFaq(id, { lang: s.lang, now, estimate: s.estimates > 0 ? est : null, req: s.req });
+    blocks.push({ t: 'text', text: a.text });
+    if (a.links?.length) blocks.push({ t: 'links', items: a.links });
+    for (const [i, text] of (a.ask ?? []).entries()) if (!chips.some((c) => c.label === text)) chips.push({ t: 'say', key: `ask-${id}-${i}`, label: text, text });
+    contact ||= !!a.contact;
+  }
+  if (contact) chips.push(contactChip(s.lang));
+  const state = remember({ ...s, shown: [...s.shown, ...ids.map((id) => `faq-${id}`)] }, chips);
   return { state, turn: { lang: s.lang, blocks, chips, trace: [T(s.lang, '查找相关说明…', 'Looking that up…')] } };
 }
 
@@ -621,21 +632,28 @@ function typedAnswer(s: ChatState, text: string): { req: Requirements; budgetAss
   }
 }
 
-const QUESTION = /[?？]|吗|呢\s*$|怎么|如何|多少|能不能|可不可以|是否|有没有|\b(how|what|when|where|who|why|which|can you|could you|do you|does it|is it|are you|will you|would you)\b/i;
+const QUESTION_ZH = /[?？]|吗|呢\s*$|怎么|如何|多少|能不能|可不可以|是否|有没有/;
+// English: a question mark, or a sentence that opens like a question ("where" inside "a portal where…" is not one).
+const QUESTION_EN = /\?|^\s*(how|what|when|where|who|why|which|can|could|do|does|did|is|are|will|would|should|may)\b/i;
+// Other people's contact details ("发到我邮箱" is not one of them).
+const PERSONAL = /(email addresses|their emails|emails? and phone|phone numbers|contact (details|info)|手机号|电话号码|邮箱地址|联系方式|微信号|(用户|客户|求职者|会员|个人|他们)的?(邮箱|手机))/i;
 
 /** The sentences of a message that ask something, for FAQ matching ("" if none). */
 function askedPart(text: string): string {
+  const low = prepare(text).low;
   const parts: string[] = [];
   let cur = '';
-  for (const ch of prepare(text).low) {
+  for (let i = 0; i < low.length; i++) {
+    const ch = low[i];
     cur += ch;
-    if (/[?？。!！;；\n]/.test(ch)) {
+    // "." ends a sentence only before a space or the end (not in "1.5万" or "next.js").
+    if (/[?？。!！;；\n]/.test(ch) || (ch === '.' && (i === low.length - 1 || low[i + 1] === ' '))) {
       parts.push(cur);
       cur = '';
     }
   }
   if (cur.trim()) parts.push(cur);
-  return parts.filter((p) => QUESTION.test(p)).join(' ');
+  return parts.filter((p) => QUESTION_ZH.test(p) || QUESTION_EN.test(p)).join(' ');
 }
 
 /**
@@ -723,7 +741,9 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
       }
       const whole = matchFaq(text);
       // Work Jack doesn't take is declined, whatever else the message says.
-      if (whole === 'unsupported' || whole === 'personal_data' || whole === 'bot') return faqTurn(s, whole, ctx.now);
+      if (whole === 'unsupported' || whole === 'personal_data') return faqTurn(s, whole, ctx.now);
+      // "…names, emails and phone numbers" for a scraper already on the table.
+      if ((s.req.kind === 'scraper' || parsed.kind === 'scraper' || s.shown.includes('faq-personal_data')) && PERSONAL.test(prepare(text).low)) return faqTurn(s, 'personal_data', ctx.now);
       // Answering "which kind?" in words: the closest kind wins even on a weak signal.
       if (s.pending === 'kind' && !parsed.kind) {
         const top = (Object.entries(parsed.kindScores) as [Kind, number][]).sort((a, b) => b[1] - a[1])[0];
@@ -741,8 +761,8 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
         if (!s.req.kind) return askTurn(s, 'kind', T(s.lang, '收到。还想确认一下项目类型：', 'Thanks. One thing first, the kind of project:'));
         return estimateTurn(s, before, { now: ctx.now, text, faq });
       }
-      // A question with no project in it.
-      if (whole && (asked || parsed.signal === 0)) return faqTurn(s, whole, ctx.now);
+      // A question with no project in it (one or two: "怎么收费？要先付全款吗？").
+      if (whole && (asked || parsed.signal === 0)) return faqTurn(s, asked ? matchFaqs(asked) : [whole], ctx.now);
       const small = smallTalk(text);
       if (small === 'greet') return greetTurn(s, s.req.fromSlug);
       if (small === 'thanks' || small === 'bye' || small === 'ok') {

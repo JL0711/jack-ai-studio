@@ -22,6 +22,14 @@ export function applies(f: FeatureId, kind: Kind, features: Requirements['featur
   return f === 'offline' && features.ai_chat === true;
 }
 
+/** What a kind of project is for: never dropped to fit a budget. */
+const CORE_OUTPUT: Partial<Record<Kind, FeatureId[]>> = {
+  automation: ['docgen', 'reports', 'ocr', 'notifications'],
+  scraper: ['reports', 'schedule'],
+  integration: ['schedule'],
+  rag: ['ocr'],
+};
+
 /** Included features a visitor can take out of the base ("暂时不用支付的商城"). */
 const REMOVABLE: FeatureId[] = ['payments', 'auth', 'admin', 'wechat_login', 'uploads'];
 
@@ -49,17 +57,15 @@ interface Core {
 }
 
 /**
- * How much is known. Deliberately not the number of features: ticking one more
- * in the card must never lower the margin and with it the top price.
+ * How clear the scope is. Deliberately not the number of features, the budget or
+ * the deadline: ticking a feature or naming a budget doesn't make the work any
+ * clearer, and must never lower the margin (and with it the top price).
  */
 function confidenceOf(req: Requirements): Estimate['confidence'] {
   if (req.scale) return 'low';
   let c = 0;
   if (req.kind) c += 2;
   c += Math.min(2, Object.keys(req.quantities).length);
-  c += Math.min(1.5, Object.keys(req.features).length * 0.5);
-  if (req.budget) c += 0.5;
-  if (req.deadlineDays !== undefined) c += 0.5;
   if (req.hasDesign !== undefined) c += 0.5;
   if (req.detail > 30) c += 1;
   if (req.detail > 100) c += 1;
@@ -132,6 +138,11 @@ function core(req: Requirements, kind: Kind, drop: FeatureId[] = []): Core & { c
   }
 
   const q = req.quantities;
+  // A product catalog on a website: each product is a small page of its own.
+  if (kind === 'site' && q.products && q.products > 20) {
+    const n = Math.min(500, q.products);
+    lines.push({ id: 'products', label: bi(`约 ${n} 个产品的展示页`, `About ${n} product pages`), hours: [Math.ceil(n / 12), Math.ceil(n / 5)] });
+  }
   if (kind === 'site' && q.pages && q.pages > 5) {
     const extra = Math.min(60, q.pages - 5);
     lines.push({ id: 'pages', label: bi(`多出的 ${extra} 个页面`, `${extra} extra pages`), hours: [extra, Math.ceil(extra * 2.5)] });
@@ -192,10 +203,11 @@ function budgetFit(req: Requirements, kind: Kind, usd: Range, rush: boolean): Bu
   }
   if (budgetUsd[1] >= usd[0]) return { status: 'tight', budgetUsd };
 
-  // Over budget: drop the least essential features until the low end fits.
+  // Over budget: drop the least essential features until the low end fits
+  // (never what the project is for: a statement script without its documents is nothing).
   const wanted = core(req, kind).wanted;
   const order = wanted
-    .filter((f) => FEATURES[f].priority <= 3)
+    .filter((f) => FEATURES[f].priority <= 3 && !(CORE_OUTPUT[kind] ?? []).includes(f))
     .sort((a, b) => FEATURES[a].priority - FEATURES[b].priority || featureHours(b, kind)[1] - featureHours(a, kind)[1]);
   const drop: FeatureId[] = [];
   for (const f of order) {
