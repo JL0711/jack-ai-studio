@@ -122,7 +122,7 @@ export const TEXT: { zh: Text; en: Text } = {
     announceEnd: '通话结束，小结已经整理好了。',
     realNote: '正式版：Apple Silicon 上的本地 Whisper 实时转写，Ollama 跑的本地模型读完整段对话再给建议，默认不保存录音。这里的台词和建议是事先写好的，要点和小结由浏览器里的规则算出来。',
     freeNote: '浏览器版只按关键词规则匹配，并记住前面听到的预算、日期等信息；正式版由本地模型读完整段对话再给建议。',
-    madeUp: '人物、公司和价格都是虚构的。',
+    madeUp: '人物、公司和价格都是虚构的，不是 Jack 的报价；想知道你的项目大概多少钱，用「AI 估价」。',
     noMic: '为什么不用麦克风：浏览器自带的语音识别在 Chrome 里会把声音传到云端，跟这个产品「声音只在本机处理」的做法相反，所以这里只用文字。',
     examplesList: [
       '你们做一个小程序大概多少钱？',
@@ -236,7 +236,7 @@ export const TEXT: { zh: Text; en: Text } = {
     announceEnd: 'Call ended. A summary is ready.',
     realNote: 'The real version: local Whisper on Apple Silicon transcribes live, and a local model in Ollama reads the whole conversation to suggest replies. No audio is saved by default. Here the lines and suggestions are written in advance; key facts and the summary are worked out by rules in your browser.',
     freeNote: 'This browser version matches keyword rules and remembers facts heard earlier, like a budget or a date. The real version has a local model read the whole conversation.',
-    madeUp: 'The people, companies and prices are made up.',
+    madeUp: 'The people, companies and prices are made up and aren’t Jack’s rates; for your own project, try the instant estimate.',
     noMic: 'Why no microphone: the browser’s built-in speech recognition sends audio to a cloud service in Chrome, the opposite of this product’s approach of processing audio only on your own machine. So this demo is text only.',
     examplesList: [
       'How much would a booking app cost?',
