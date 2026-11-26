@@ -1,0 +1,785 @@
+/* AI call copilot demo (src/demos/ai-call-copilot). Same visual language as the
+   home-page "call" illustration: amber waveform, 对方 / 你 labels in the pixel
+   font, and an amber "try saying" box. Colours come only from the theme tokens. */
+
+.cc {
+  container-type: inline-size;
+  gap: 14px;
+}
+.cc-mode {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* pixel-font labels: only crisp at exactly 12px / 12px */
+.cc-head,
+.cc-who,
+.cc-line-tag,
+.cc-tactic,
+.cc-auto,
+.cc-status,
+.cc-copilot-title,
+.cc-sim,
+.cc-fact span,
+.cc-key {
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  font-weight: 400;
+}
+
+/* ---------- toolbar ---------- */
+.cc-bar {
+  gap: 10px;
+}
+.cc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cc .btn-small,
+.cc .demo-chip,
+.cc .demo-seg button {
+  min-height: 36px;
+}
+.cc-btn {
+  gap: 8px;
+}
+.cc-btn svg {
+  flex: none;
+}
+.cc-speed button {
+  min-width: 44px;
+  font-variant-numeric: tabular-nums;
+}
+.cc-autopick {
+  gap: 8px;
+}
+.cc-autopick .led {
+  width: 6px;
+  height: 6px;
+}
+.cc-scenarios .demo-chip {
+  font-size: 0.86rem;
+}
+
+/* ---------- layout ---------- */
+.cc-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+@container (min-width: 760px) {
+  .cc-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  }
+}
+.cc-call,
+.cc-copilot {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cc-call {
+  padding: 0;
+}
+.cc-copilot {
+  gap: 12px;
+}
+.cc-copilot:focus {
+  outline: none;
+}
+.cc-copilot:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- call pane ---------- */
+.cc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px 14px;
+  border-bottom: 1px dashed var(--border);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.cc-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 6em;
+}
+.cc-timer {
+  position: relative;
+  font-family: var(--seg);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.cc-timer-ghost {
+  position: absolute;
+  inset: 0;
+  color: var(--text);
+  opacity: 0.07;
+}
+.cc-timer-value {
+  position: relative;
+  text-shadow: 0 0 14px var(--signal-glow);
+}
+:root[data-theme='light'] .cc-timer-value {
+  text-shadow: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .cc-timer-value {
+    text-shadow: none;
+  }
+}
+.cc-rec {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+/* a hollow dot: nothing is being recorded */
+.cc-rec-dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.cc-who-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 2px;
+  min-width: 0;
+}
+.cc-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 650;
+}
+.cc-caller {
+  display: grid;
+  min-width: 0;
+  line-height: 1.35;
+}
+.cc-caller b {
+  font-weight: 620;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+.cc-caller span {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.cc-sim {
+  margin-left: auto;
+  align-self: flex-start;
+  padding: 4px 6px;
+  border: 1px solid color-mix(in srgb, var(--demo) 50%, transparent);
+  color: var(--demo);
+  white-space: nowrap;
+}
+
+/* waveform, like the home-page illustration */
+.cc-wave {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 8px 14px;
+  overflow: hidden;
+}
+.cc-wave i {
+  flex: 0 0 3px;
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.3;
+  transform: scaleY(0.1);
+  transition:
+    transform 0.35s var(--ease-out),
+    opacity 0.35s;
+}
+.cc-wave.is-on i {
+  opacity: 0.75;
+  animation: cc-wave 0.8s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -67ms);
+}
+.cc-wave.is-on i:nth-child(3n) {
+  animation-duration: 0.62s;
+}
+.cc-wave.is-on i:nth-child(3n + 1) {
+  animation-duration: 1.04s;
+}
+.cc-wave.is-you i {
+  background: var(--text-muted);
+}
+@keyframes cc-wave {
+  from {
+    transform: scaleY(calc(var(--h) * 0.4));
+  }
+  to {
+    transform: scaleY(calc(var(--h) * 2.6));
+  }
+}
+
+.cc-transcript {
+  list-style: none;
+  margin: 0;
+  padding: 10px 14px 14px;
+  height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* older lines fade out under the waveform instead of being cut off */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cc-transcript:focus-visible {
+  outline-offset: -2px;
+}
+.cc-line {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  column-gap: 10px;
+  animation: cc-in 0.3s var(--ease-out) both;
+}
+.cc-who {
+  padding-top: 6px;
+  color: var(--text-dim);
+}
+.cc-line.is-you .cc-who {
+  color: var(--accent);
+}
+.cc-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.cc-line.is-you .cc-text {
+  color: var(--text-muted);
+}
+.cc-line.is-live .cc-text {
+  color: var(--text-muted);
+}
+.cc-partial {
+  color: var(--text-dim);
+}
+.cc-caret {
+  display: inline-block;
+  width: 6px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -2px;
+  background: var(--signal);
+  animation: cc-blink 1s steps(1) infinite;
+}
+.cc-line-tag {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: 6px;
+  color: var(--text-dim);
+}
+.cc-line-tag.is-live {
+  color: var(--accent);
+}
+.cc-ent {
+  border-radius: 1px;
+}
+.cc-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+.cc-dialing.is-on::after {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 14px auto 0;
+  border-radius: 50%;
+  background: var(--signal);
+  animation: cc-ring 1.2s var(--ease-out) infinite;
+}
+
+/* ---------- copilot pane ---------- */
+.cc-copilot .demo-pane-head {
+  margin-bottom: 0;
+}
+.cc-copilot-title {
+  color: var(--accent);
+}
+.cc-status {
+  color: var(--text-dim);
+}
+.cc-status.is-thinking,
+.cc-status.is-choose {
+  color: var(--accent);
+}
+.cc-heard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+}
+.cc-heard .tag {
+  color: var(--text);
+}
+.cc-dash {
+  color: var(--text-dim);
+}
+
+.cc-sug-area {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 300px;
+}
+.cc-sugs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.cc-sugs li {
+  animation: cc-rise 0.4s var(--ease-out) both;
+  animation-delay: calc(var(--k) * 80ms);
+}
+.cc-sugs.is-said li {
+  animation: none;
+}
+.cc-sug {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  overflow: hidden;
+  padding: 11px 40px 12px 12px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    opacity 0.35s,
+    transform 0.15s;
+}
+.cc-sug:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--signal) 17%, transparent);
+}
+.cc-sug:active {
+  transform: translateY(1px);
+}
+.cc-sug.is-auto {
+  border-color: var(--accent);
+}
+.cc-sug.is-chosen {
+  border-color: var(--signal);
+  box-shadow: inset 3px 0 0 var(--signal);
+  cursor: default;
+}
+.cc-sug.is-dropped {
+  opacity: 0.28;
+  cursor: default;
+}
+.cc-sugs.is-said .cc-sug:hover {
+  background: var(--accent-soft);
+}
+.cc-sugs.is-said .cc-sug.is-dropped:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.cc-tactic {
+  color: var(--accent);
+}
+.cc-sug-text {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.cc-key {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  padding: 3px 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  color: var(--text-dim);
+  background: var(--surface);
+}
+.cc-auto {
+  color: var(--text-dim);
+}
+.cc-auto-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--signal);
+  transform-origin: 0 50%;
+}
+.cc-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.cc-idle {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  padding: 16px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  border: 1px dashed var(--border-strong);
+}
+
+/* "thinking": empty cards with a light sweep */
+.cc-thinking {
+  display: grid;
+  gap: 8px;
+}
+.cc-ghost-card {
+  display: grid;
+  gap: 10px;
+  padding: 15px 12px;
+  border: 1px dashed var(--border-strong);
+}
+.cc-ghost-card i {
+  position: relative;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  background: var(--border-strong);
+}
+.cc-ghost-card i:first-child {
+  background: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.cc-thinking.is-still .cc-ghost-card {
+  opacity: 0.6;
+}
+.cc-thinking.is-still .cc-ghost-card i::after {
+  display: none;
+}
+.cc-ghost-card i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text) 22%, transparent), transparent);
+  transform: translateX(-100%);
+  animation: cc-sweep 1.1s var(--ease-out) infinite;
+}
+
+/* facts */
+.cc-facts-box {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.cc-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cc-fact {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+}
+.cc-fact span {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.cc-fact b {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.cc-fact.is-new {
+  border-color: var(--accent);
+  animation: cc-flash 1.4s var(--ease-out);
+}
+.cc-nofacts {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+/* summary */
+.cc-summary {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  animation: cc-rise 0.45s var(--ease-out) both;
+}
+.cc-summary:focus {
+  outline: none;
+}
+.cc-summary-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.cc-summary-note {
+  margin: -8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+.cc-summary-block {
+  display: grid;
+  gap: 8px;
+}
+.cc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+}
+.cc-list li {
+  position: relative;
+  padding-left: 20px;
+}
+.cc-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--live);
+}
+.cc-list.is-todo li::before {
+  content: '→';
+  color: var(--accent);
+}
+.cc-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+/* ---------- free mode ---------- */
+.cc-free {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 14px 14px;
+  border-top: 1px dashed var(--border);
+}
+.cc-free-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.cc-free-row .cc-who {
+  padding-top: 0;
+}
+.cc-free-row .input {
+  min-height: 42px;
+  padding: 8px 11px;
+}
+.cc-examples {
+  display: grid;
+  gap: 8px;
+}
+.cc-examples .demo-chip {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+.cc-free-empty {
+  display: block;
+  padding: 24px 0;
+}
+.cc-end-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ---------- notes under the demo ---------- */
+.cc-notes {
+  display: grid;
+  gap: 6px;
+  max-width: 96ch;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+.cc-notes p {
+  margin: 0;
+}
+
+/* ---------- small screens ---------- */
+@container (max-width: 520px) {
+  /* one row of calls that scrolls sideways, so the call itself starts higher up */
+  .cc-scenarios {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .cc-scenarios::-webkit-scrollbar {
+    display: none;
+  }
+  .cc-scenarios .demo-chip {
+    flex: none;
+    white-space: nowrap;
+  }
+  .cc-head {
+    padding: 9px 12px;
+  }
+  .cc-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  .cc-who-row {
+    padding: 10px 12px 0;
+  }
+  .cc-wave {
+    height: 34px;
+    padding: 7px 12px;
+  }
+  .cc-transcript {
+    height: 210px;
+    padding: 8px 12px 12px;
+  }
+  .cc-line {
+    grid-template-columns: 34px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+  .cc-text {
+    font-size: 0.92rem;
+  }
+  .cc-sug-area {
+    min-height: 0;
+  }
+  .cc-sug {
+    padding-right: 12px;
+  }
+  .cc-free {
+    padding: 12px;
+  }
+  .cc-free-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .cc-free-row .cc-who {
+    display: none;
+  }
+  /* examples in one sideways row, so the suggestions stay close to the input */
+  .cc-examples .demo-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .cc-examples .demo-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .cc-examples .demo-chip {
+    flex: none;
+    max-width: 78%;
+  }
+}
+@container (max-width: 400px) {
+  .cc-btn-label,
+  .cc-avatar {
+    display: none;
+  }
+  .cc-rec {
+    margin-left: 0;
+  }
+}
+
+/* ---------- motion ---------- */
+@keyframes cc-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes cc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes cc-flash {
+  from {
+    background: color-mix(in srgb, var(--signal) 40%, transparent);
+  }
+}
+@keyframes cc-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes cc-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes cc-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--signal-glow);
+  }
+  100% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-line,
+  .cc-sugs li,
+  .cc-summary,
+  .cc-fact.is-new,
+  .cc-ghost-card i::after,
+  .cc-dialing.is-on::after,
+  .cc-caret {
+    animation: none;
+  }
+  .cc-wave.is-on i {
+    animation: none;
+    transform: scaleY(var(--h));
+  }
+  .cc-wave i,
+  .cc-sug {
+    transition: none;
+  }
+}

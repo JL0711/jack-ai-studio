@@ -537,6 +537,16 @@
   color: var(--text-dim);
 }
 
+/* ---------- instant estimate after the contact form ---------- */
+.as-instant {
+  margin: 16px 0 0;
+}
+.as-instant-lead {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
 /* ---------- send form ---------- */
 .as-send {
   display: grid;

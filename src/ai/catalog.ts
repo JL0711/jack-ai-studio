@@ -493,7 +493,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '自己更新内容的后台', en: 'Content you can update yourself' },
     hours: [5, 10],
     priority: 3,
-    signals: [['文章', 1.4], ['博客', 1.6], ['内容管理', 2.5], ['自己更新', 2.5], ['自己改内容', 2.5], ['新闻动态', 2], ['发布新闻', 2.2], [W('cms'), 2.5], [W('content management'), 2.5], [W('blog'), 1.6], [W('update (the )?(content|text|news) (myself|ourselves)'), 2.5], [W('news section'), 2]],
+    signals: [['文章', 1.4], ['博客', 1.6], ['内容管理', 2.5], ['自己更新', 2.5], ['自己改内容', 2.5], ['新闻动态', 2], ['发布新闻', 2.2], ['发新闻', 2.5], ['更新新闻', 2.5], ['自己发', 2], ['自己改', 2], ['后台改文字', 2.5], [W('cms'), 2.5], [W('content management'), 2.5], [W('blog'), 1.6], [W('update (the )?(content|text|news) (myself|ourselves)'), 2.5], [W('news section'), 2]],
   },
   seo: {
     label: { zh: 'SEO 基础优化', en: 'SEO basics' },

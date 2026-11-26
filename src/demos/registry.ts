@@ -50,8 +50,8 @@ export const DEMOS: Record<string, DemoInfo> = {
   'ai-call-copilot': {
     title: { zh: '在线试用：通话助手（模拟）', en: 'Try it: call copilot (simulated)' },
     note: {
-      zh: '这个项目还在开发中。这里用文字模拟一通电话：对方说一句，右边马上给出可以怎么回。也可以自己输入对方说的话。正式版用本地 Whisper 实时转写，不保存录音。',
-      en: 'This project is still in progress. Here a call is simulated in text: the other side says something and suggested replies appear on the right. You can also type what they say. The real version transcribes live with a local Whisper model and saves no audio.',
+      zh: '这个项目还在开发中。这里用文字模拟一通电话：对方说一句，马上给出 2–3 条可以怎么回，也可以自己输入对方说的话。正式版用本地 Whisper 实时转写、本地模型给建议，默认不保存录音。',
+      en: 'This project is still in progress. Here a call is simulated in text: the other side says something and 2–3 suggested replies appear at once. You can also type what they say. The real version transcribes live with a local Whisper model, a local model suggests the replies, and no audio is saved by default.',
     },
     simulated: true,
     quoteKind: 'voice',

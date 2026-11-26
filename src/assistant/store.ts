@@ -108,18 +108,19 @@ function reducedMotion() {
   return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 }
 
-// One reply at a time: set before the first await, so a double click or React's
-// double-run of effects in development can't start two replies.
-let running = false;
+// Replies run one after another, in order: a greeting still being "worked out"
+// and a message sent right after it (e.g. from the contact page) both get their
+// turn, and nothing is dropped. (The UI disables its buttons while busy, so a
+// double click can't queue the same thing twice.)
+let chain: Promise<void> = Promise.resolve();
+function enqueue(job: () => Promise<void>): Promise<void> {
+  const next = chain.then(job, job);
+  chain = next.catch(() => undefined);
+  return next;
+}
 
-async function run(input: Input, lang: Lang, userText?: string) {
-  if (running || snap.busy) return;
-  running = true;
-  try {
-    await runOnce(input, lang, userText);
-  } finally {
-    running = false;
-  }
+function run(input: Input, lang: Lang, userText?: string): Promise<void> {
+  return enqueue(() => runOnce(input, lang, userText));
 }
 
 async function runOnce(input: Input, lang: Lang, userText?: string) {
@@ -142,10 +143,15 @@ async function runOnce(input: Input, lang: Lang, userText?: string) {
   set({ messages: [...messages, { id: id(), role: 'assistant', turn, at: Date.now() }], state: next, busy: false, thinking: null });
 }
 
-/** Starts the conversation with a greeting (does nothing if it has already started). */
-export async function start(lang: Lang, fromSlug?: string, kind?: string) {
-  if (snap.messages.length || running) return;
-  await run({ t: 'start', fromSlug, kind }, lang);
+/**
+ * Starts the conversation with a greeting. Does nothing if it has already started;
+ * checked when its turn comes, so React's double effects can't greet twice.
+ */
+export function start(lang: Lang, fromSlug?: string, kind?: string): Promise<void> {
+  return enqueue(async () => {
+    if (snap.messages.length) return;
+    await runOnce({ t: 'start', fromSlug, kind }, lang);
+  });
 }
 
 export async function sendText(text: string, lang: Lang) {
@@ -163,8 +169,11 @@ export async function sendInput(input: Input, lang: Lang, echo?: string) {
  * Recalculates in place: the newest assistant message is replaced instead of a
  * new pair of messages (used by the feature toggles on the estimate card).
  */
-export async function recalcInPlace(input: Input, lang: Lang) {
-  if (snap.busy) return;
+export function recalcInPlace(input: Input, lang: Lang): Promise<void> {
+  return enqueue(() => recalcNow(input, lang));
+}
+
+async function recalcNow(input: Input, lang: Lang) {
   const engine = await loadEngine();
   const state = snap.state ?? engine.initialState(lang);
   const { state: next, turn } = engine.respond(state, input, { now: new Date() });

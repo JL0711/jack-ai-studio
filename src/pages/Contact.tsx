@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { Suspense, lazy, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Scramble } from '../components/fx/Scramble';
@@ -23,6 +23,9 @@ import { getApi } from '../store';
 import { ApiError } from '../store/api';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
+
+// The estimate engine loads only after a message was sent.
+const InstantEstimate = lazy(() => import('../assistant/InstantEstimate'));
 
 /** Whether a message sent now falls inside reply hours, with both clocks. */
 function ReplyNow() {
@@ -64,6 +67,7 @@ export default function Contact() {
   const [error, setError] = useState('');
   const [networkError, setNetworkError] = useState(false);
   const [slow, setSlow] = useState(false);
+  const [sent, setSent] = useState<ContactInput | null>(null);
 
   useEffect(() => {
     if (status !== 'sending') {
@@ -96,6 +100,7 @@ export default function Contact() {
     try {
       // Honeypot filled in → almost certainly a bot. Pretend it worked, send nothing.
       if (honeypot.trim() === '') await getApi().submitContact(form);
+      setSent(form);
       setStatus('sent');
       setForm(EMPTY);
       setTouched(false);
@@ -150,6 +155,11 @@ export default function Contact() {
                   </p>
                   {demo && <p className="small">{t('contact.demoSuccess')}</p>}
                 </div>
+                {sent && (
+                  <Suspense fallback={null}>
+                    <InstantEstimate message={sent.message} projectType={sent.project_type} budget={sent.budget} />
+                  </Suspense>
+                )}
                 <button type="button" className="btn btn-secondary" onClick={() => setStatus('idle')}>
                   {t('contact.sendAnother')}
                 </button>

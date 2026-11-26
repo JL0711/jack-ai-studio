@@ -59,6 +59,9 @@ const zh = {
   'quote.howTitle': '怎么算的',
   'quote.summary': '目前的估价',
   'quote.empty': '说说你的项目，这里会显示估价。',
+  'instant.kicker': '即时粗估',
+  'instant.lead': '按你刚才写的需求，网页里的代码先算了一个大概：',
+  'instant.refine': '在 AI 估价里细调',
 } as const;
 
 export type ChatKey = keyof typeof zh;
@@ -117,6 +120,9 @@ const en: Record<ChatKey, string> = {
   'quote.howTitle': 'How it works',
   'quote.summary': 'Current estimate',
   'quote.empty': 'Describe your project and the estimate appears here.',
+  'instant.kicker': 'Instant rough estimate',
+  'instant.lead': 'From what you just wrote, the code on this page worked out a first ballpark:',
+  'instant.refine': 'Refine it in the estimate chat',
 };
 
 export const CHAT_STRINGS: Record<Lang, Record<ChatKey, string>> = { zh, en };
