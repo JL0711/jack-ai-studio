@@ -235,7 +235,7 @@ export const KINDS: Record<Kind, KindDef> = {
     risks: [{ zh: '模型能力受显存限制：16 GB 显存适合 14B 左右的模型。', en: 'VRAM limits model size: 16 GB suits roughly 14B models.' }],
     similar: ['local-doc-qa', 'mac-windows-bridge'],
     signals: [
-      ['本地部署', 4.5], ['私有化', 4.5], ['私有部署', 4.5], ['本地模型', 4.5], ['本地大模型', 5], ['内网', 2.5], ['不联网', 3],
+      ['本地部署', 4.5], ['私有化', 4.5], ['私有部署', 4.5], ['本地模型', 4.5], ['本地大模型', 5], ['内网', 2.5], ['不联网', 3], ['不能上云', 3], ['不出内网', 3],
       ['数据不出', 3.5], ['不上云', 3.5], ['ollama', 4.5], ['开源模型', 3.5], ['大模型部署', 4.5], ['部署大模型', 4.5], ['显卡', 2],
       ['gpu', 2], ['qwen', 2.5], ['llama', 2.5], ['deepseek', 2.5], ['lm studio', 3.5], ['vllm', 3.5], ['离线', 1.5],
       [W('local (llm|ai|model)s?'), 5], [W('on[- ]?prem(ise)?'), 4.5], [W('self[- ]?host(ed|ing)?'), 4], [W('private ai'), 4],
@@ -575,7 +575,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '完全离线（本地模型）', en: 'Offline on local models' },
     hours: [8, 16],
     priority: 4,
-    signals: [['离线', 2.5], ['本地运行', 2.5], ['不联网', 3], ['内网', 2.2], ['数据不出', 3], ['不上云', 3], ['本地部署', 2.5], ['私有化', 2.5], ['保密', 1.4], [W('offline'), 2.5], [W('on[- ]?prem(ise)?'), 2.5], [W('air[- ]?gapped'), 3], [W('local(ly)? (only|hosted|models?)'), 2.5], [W('no internet'), 3], [W('(data|files) (stay|stays|must stay)'), 2.5], [W('self[- ]?hosted'), 2.2]],
+    signals: [['离线', 2.5], ['本地运行', 2.5], ['不联网', 3], ['内网', 2.2], ['数据不出', 3], ['不上云', 3], ['不能上云', 3], ['不能放到云', 3], ['不能放云', 3], ['不能上传', 2.5], ['不出内网', 3], ['断网', 2.5], ['本地化部署', 2.5], ['本地部署', 2.5], ['私有化', 2.5], ['保密', 1.4], [W("can'?t (go|be (uploaded|sent)) to (the )?cloud"), 3], [W('no cloud'), 2.5], [W('(must|has to|needs to) stay (on[- ]?prem(ise)?|local|in[- ]house|on our (servers?|machines?))'), 3], [W('offline'), 2.5], [W('on[- ]?prem(ise)?'), 2.5], [W('air[- ]?gapped'), 3], [W('local(ly)? (only|hosted|models?)'), 2.5], [W('no internet'), 3], [W('(data|files) (stay|stays|must stay)'), 2.5], [W('self[- ]?hosted'), 2.2]],
   },
   mobile_web: {
     label: { zh: '手机适配', en: 'Mobile-friendly' },

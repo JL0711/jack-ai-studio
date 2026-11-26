@@ -222,7 +222,9 @@ const DOCS_EN = new RegExp(`\\b${EN_NUM}\\+?\\s*(?:pdfs?|documents?|docs|files|c
 const PAGES_ZH = new RegExp(`${NUM}\\s*(?:个)?\\s*(?:页面|网页|板块|栏目)`);
 const PAGES_ZH2 = new RegExp(`${NUM}\\s*(?:个)?\\s*页(?!\\s*(?:pdf|文档|的pdf|的文档|的合同|word))`, 'i');
 const PAGES_EN = new RegExp(`\\b${EN_NUM}\\s*(?:pages?|sections?|screens?)\\b(?![- ]*(?:pdf|document|doc))`, 'i');
-const USERS_ZH = new RegExp(`${NUM}\\s*(?:多|余|来)?\\s*(?:个|名|位)?\\s*(?:用户|员工|学员|会员|客户|老师|学生|成员|队员|销售|同事|人在用|人使用|人用)`);
+const USERS_ZH = new RegExp(`${NUM}\\s*(?:多|余|来)?\\s*(?:个|名|位)?\\s*(?:用户|员工|学员|会员|客户|老师|学生|成员|队员|销售|同事|律师|医生|护士|会计|工程师|设计师|客服|店员|家长|志愿者|人在用|人使用|人用)`);
+// "十几个律师用" / "五十名员工在用": N + measure word + who + 用
+const USERS_ZH2 = new RegExp(`${NUM}\\s*(?:多|余|来)?\\s*(?:个|名|位)\\s*[\\u4e00-\\u9fff]{1,3}?(?:在)?(?:用|使用)`);
 const USERS_EN = new RegExp(`\\b${EN_NUM}\\+?\\s*(?:users?|people|employees|staff|members|customers|students|clients|seats|team members)\\b`, 'i');
 const LANGS_ZH = /([一二两三四五六七八九十几\d]+)\s*(?:种|门|个)?\s*语言/;
 const LANGS_EN = new RegExp(`\\b${EN_NUM}\\s+languages\\b`, 'i');
@@ -509,7 +511,7 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
   if (docs) quantities.docs = docs;
   const pages = firstQuantity(t.low, PAGES_ZH, PAGES_EN) ?? (kind === 'site' ? firstQuantity(t.low, PAGES_ZH2, /$^/) : undefined);
   if (pages && pages < 500) quantities.pages = pages;
-  const users = firstQuantity(t.low, USERS_ZH, USERS_EN);
+  const users = firstQuantity(t.low, USERS_ZH, USERS_EN) ?? firstQuantity(t.low, USERS_ZH2, /$^/);
   if (users) quantities.users = users;
   const products = firstQuantity(t.low, PRODUCTS_ZH, PRODUCTS_EN);
   if (products) quantities.products = products;

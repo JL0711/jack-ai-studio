@@ -66,7 +66,8 @@ const RULES: FaqRule[] = [
   { id: 'source', zh: /(源码|源代码|代码归|版权|知识产权|代码给我|交付代码)/, en: /\b(source code|ownership|own the code|ip rights|intellectual property|who owns|hand ?over)\b/ },
   { id: 'maintenance', zh: /(维护|售后|后期|出了问题|出问题|保修|长期支持|以后改)/, en: /\b(maintenance|maintain|support after|after (launch|delivery)|bugs? after|warranty|ongoing support|retainer|updates? later)\b/ },
   { id: 'revisions', zh: /(修改几次|改几次|返工|不满意|改到满意|无限修改)/, en: /\b(revisions?|changes later|not happy|unlimited changes|rework)\b/ },
-  { id: 'contract', zh: /(合同|协议|签约|签字)/, en: /\b(contract|agreement|sign(ed)? (a|the) )\b/ },
+  // Not plain "合同": clients often have contracts as documents to process.
+  { id: 'contract', zh: /(签合同|签约|合同怎么|有没有合同|要不要合同|需要签|正式合同|合作协议|签协议)/, en: /\b(sign (a|the) contract|contract to sign|written agreement|do you (use|sign) (a )?contracts?)\b/ },
   { id: 'meeting', zh: /(开会|视频|电话|语音|见面|通话|面谈|腾讯会议)/, en: /\b(call|meeting|zoom|video|phone|meet|google meet|teams call)\b/ },
   { id: 'longterm', zh: /(长期|兼职|全职|驻场|招聘|入职|包月合作|长期合作)/, en: /\b(long[- ]term|part[- ]time|full[- ]time|hire you|employ|contract role|ongoing work|monthly retainer)\b/ },
   { id: 'team', zh: /(团队|几个人|一个人做|外包公司|公司规模|有几个人)/, en: /\b(team|one person|solo|agency|company size|just you|by yourself)\b/ },

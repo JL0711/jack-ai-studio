@@ -108,8 +108,21 @@ function reducedMotion() {
   return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 }
 
+// One reply at a time: set before the first await, so a double click or React's
+// double-run of effects in development can't start two replies.
+let running = false;
+
 async function run(input: Input, lang: Lang, userText?: string) {
-  if (snap.busy) return;
+  if (running || snap.busy) return;
+  running = true;
+  try {
+    await runOnce(input, lang, userText);
+  } finally {
+    running = false;
+  }
+}
+
+async function runOnce(input: Input, lang: Lang, userText?: string) {
   const engine = await loadEngine();
   const messages = [...snap.messages];
   if (userText) messages.push({ id: id(), role: 'user', text: userText, at: Date.now() });
@@ -129,8 +142,9 @@ async function run(input: Input, lang: Lang, userText?: string) {
   set({ messages: [...messages, { id: id(), role: 'assistant', turn, at: Date.now() }], state: next, busy: false, thinking: null });
 }
 
-/** Starts (or restarts) the conversation with a greeting. */
+/** Starts the conversation with a greeting (does nothing if it has already started). */
 export async function start(lang: Lang, fromSlug?: string, kind?: string) {
+  if (snap.messages.length || running) return;
   await run({ t: 'start', fromSlug, kind }, lang);
 }
 

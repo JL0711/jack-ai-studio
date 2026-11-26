@@ -607,6 +607,9 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
       if (!text) return greetTurn(s);
       s = { ...s, lang: detectLang(text, s.lang) };
       const parsed = understand(text, { now: ctx.now, fallbackLang: s.lang });
+      // A project description that also asks something ("…，怎么付款？") gets both answers;
+      // without a question, words like "合同" are just part of the project.
+      const asks = /[?？]|吗|怎么|如何|多少|能不能|可不可以|是否|\b(how|what|when|where|who|why|can you|could you|do you|does it|is it|are you|will you)\b/i.test(text);
       // A bare answer to the pending question ("3000", "要", "不用"), only when the
       // message carries nothing else: "还要 OCR，三十个人用" must not shrink to "30".
       const bare = parsed.signal === 0 || (parsed.signal === 1 && Object.keys(parsed.quantities).length === 1);
@@ -623,7 +626,7 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
         s = { ...s, req: mergeRequirements(s.req, parsed, text), pending: null };
         if (parsed.budget) s = { ...s, budgetAssumed: parsed.budget.assumed };
         if (!s.req.kind) return askTurn(s, 'kind', T(s.lang, '收到。还想确认一下项目类型：', 'Thanks. One thing first, the kind of project:'));
-        return estimateTurn(s, before, { now: ctx.now, text, faq });
+        return estimateTurn(s, before, { now: ctx.now, text, faq: asks ? faq : null });
       }
       if (faq) return faqTurn(s, faq, ctx.now);
       const small = smallTalk(text);

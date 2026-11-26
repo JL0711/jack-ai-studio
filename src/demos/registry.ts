@@ -40,8 +40,8 @@ export const DEMOS: Record<string, DemoInfo> = {
   'mac-windows-bridge': {
     title: { zh: '在线试用：桥接控制台（模拟）', en: 'Try it: bridge console (simulated)' },
     note: {
-      zh: '模拟一次完整的使用过程：配对、同步剪贴板、在 Windows 上跑命令。输出是事先准备好的示例，不会连接任何电脑。',
-      en: 'A simulated session: pairing, clipboard sync and running commands on the Windows PC. The output is prepared in advance; nothing connects to any computer.',
+      zh: '模拟一次完整的使用过程：配对、同步剪贴板、发送文件、在 Windows 上跑命令。命令输出是事先准备好的示例，不会连接任何电脑；只有文件的 SHA-256 是在你的浏览器里真实计算的，文件不会上传。',
+      en: 'A simulated session: pairing, clipboard sync, sending a file and running commands on the Windows PC. Command output is prepared in advance and nothing connects to any computer; only a file’s SHA-256 is really computed, in your browser, and the file is never uploaded.',
     },
     simulated: true,
     quoteKind: 'automation',
