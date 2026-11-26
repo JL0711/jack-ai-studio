@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CloseIcon, ExpandIcon, RefreshIcon } from '../components/Icons';
 import { useI18n } from '../i18n/I18nProvider';
+import { useChatT } from './strings';
 import { useMedia } from '../lib/motion';
 import { ChatPanel } from './ChatPanel';
 import { closeAssistant, resetAssistant, start, useAssistant } from './store';
@@ -12,7 +13,8 @@ import { closeAssistant, resetAssistant, start, useAssistant } from './store';
  * screen like a dialog. Escape closes it.
  */
 export default function Drawer({ open, onClosed }: { open: boolean; onClosed: () => void }) {
-  const { t, lang } = useI18n();
+  const { lang } = useI18n();
+  const t = useChatT();
   const { messages } = useAssistant();
   const phone = useMedia('(max-width: 640px)');
   const panel = useRef<HTMLDivElement>(null);

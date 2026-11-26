@@ -6,6 +6,7 @@ import { ChatPanel } from '../assistant/ChatPanel';
 import { closeAssistant, getAssistant, start, useAssistant } from '../assistant/store';
 import { Scramble } from '../components/fx/Scramble';
 import { useI18n } from '../i18n/I18nProvider';
+import { useChatT } from '../assistant/strings';
 import { BEIJING, PACIFIC, hhmm, isReplyOpen, useNow, zoneTime } from '../lib/replyHours';
 import { useDocumentTitle } from '../lib/useDocumentTitle';
 
@@ -29,7 +30,8 @@ function ReplyLine() {
 /** /quote — the estimate assistant as a full page (link Jack can send to clients). */
 export default function Quote() {
   const { t, lang } = useI18n();
-  useDocumentTitle(t('quote.title'));
+  const ct = useChatT();
+  useDocumentTitle(ct('quote.title'));
   const [params] = useSearchParams();
   const { state } = useAssistant();
 
@@ -49,51 +51,51 @@ export default function Quote() {
           <span className="kicker">
             <b>03</b>
             <span aria-hidden="true">//</span>
-            {t('quote.kicker')}
+            {ct('quote.kicker')}
           </span>
           <h1>
-            <Scramble text={t('quote.title')} />
+            <Scramble text={ct('quote.title')} />
           </h1>
-          <p>{t('quote.intro')}</p>
+          <p>{ct('quote.intro')}</p>
         </header>
 
         <div className="quote-layout">
-          <section className="quote-chat ticks" aria-label={t('assistant.dialog')}>
+          <section className="quote-chat ticks" aria-label={ct('assistant.dialog')}>
             <ChatPanel variant="page" />
           </section>
           <aside className="quote-aside">
             <div className="card quote-live" aria-live="polite">
-              <h2 className="aside-h">{t('quote.summary')}</h2>
+              <h2 className="aside-h">{ct('quote.summary')}</h2>
               {est ? (
                 <>
                   <b>{fmtUsdRange(est.usd)}</b>
                   {lang === 'zh' && <span className="muted small">约 {fmtCnyRange(est.cny)}</span>}
                   <dl>
                     <div>
-                      <dt>{t('est.hours')}</dt>
+                      <dt>{ct('est.hours')}</dt>
                       <dd>{fmtHours(est.hours, lang)}</dd>
                     </div>
                     <div>
-                      <dt>{t('est.duration')}</dt>
+                      <dt>{ct('est.duration')}</dt>
                       <dd>{fmtDuration(est.days, lang)}</dd>
                     </div>
                     <div>
-                      <dt>{t('est.first')}</dt>
-                      <dd>{t('est.firstDay', { a: est.firstVersionDay[0], b: est.firstVersionDay[1] })}</dd>
+                      <dt>{ct('est.first')}</dt>
+                      <dd>{ct('est.firstDay', { a: est.firstVersionDay[0], b: est.firstVersionDay[1] })}</dd>
                     </div>
                   </dl>
                   <p className="muted small" style={{ margin: 0 }}>
-                    {t('est.disclaimer')}
+                    {ct('est.disclaimer')}
                   </p>
                 </>
               ) : (
                 <p className="muted small" style={{ margin: 0 }}>
-                  {t('quote.empty')}
+                  {ct('quote.empty')}
                 </p>
               )}
             </div>
             <div className="card">
-              <h2 className="aside-h">{t('quote.howTitle')}</h2>
+              <h2 className="aside-h">{ct('quote.howTitle')}</h2>
               <ol className="quote-how">
                 <li>{t('quote.how1')}</li>
                 <li>{t('quote.how2')}</li>

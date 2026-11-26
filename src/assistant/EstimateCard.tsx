@@ -4,7 +4,7 @@ import { FEATURES } from '../ai/catalog';
 import { fmtCnyRange, fmtDuration, fmtHours, fmtUsdRange } from '../ai/format';
 import type { Estimate, FeatureId, Lang, Requirements } from '../ai/types';
 import { SHOWCASE_PROJECTS } from '../data/projects';
-import { translate, type StringKey } from '../i18n/strings';
+import { chatT, type ChatKey } from './strings';
 import { copyText } from '../lib/clipboard';
 import { ArrowRightIcon, CopyIcon } from '../components/Icons';
 
@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function EstimateCard({ est, req, lang, live, onToggle, onSend, copyText: copyValue, fresh }: Props) {
-  const t = (k: StringKey, p?: Record<string, string | number>) => translate(lang, k, p);
+  const t = (k: ChatKey, p?: Record<string, string | number>) => chatT(lang, k, p);
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>();
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -50,7 +50,7 @@ export function EstimateCard({ est, req, lang, live, onToggle, onSend, copyText:
         </span>
         <span className="spacer" />
         {est.rush && <span className="badge badge-wip">{t('est.rush')}</span>}
-        <span className={`as-conf is-${est.confidence}`}>{t(`est.confidence.${est.confidence}` as StringKey)}</span>
+        <span className={`as-conf is-${est.confidence}`}>{t(`est.confidence.${est.confidence}` as ChatKey)}</span>
       </header>
 
       <div className="as-price" aria-live={live ? 'polite' : undefined}>

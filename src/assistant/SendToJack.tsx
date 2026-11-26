@@ -4,6 +4,7 @@ import type { ChatState } from '../ai/dialog';
 import { useAuth } from '../auth/AuthProvider';
 import { WeChatFallback } from '../components/WeChatFallback';
 import { useI18n } from '../i18n/I18nProvider';
+import { useChatT } from './strings';
 import { errorMessage } from '../lib/format';
 import { isReplyOpen } from '../lib/replyHours';
 import { LIMITS, validateContact, type ContactField } from '../lib/validation';
@@ -23,6 +24,7 @@ interface Props {
 /** The little form that sends the conversation + estimate to Jack's inbox. */
 export function SendToJack({ state, said, from, onCancel, onSent }: Props) {
   const { t } = useI18n();
+  const ct = useChatT();
   const { demo } = useAuth();
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
@@ -76,10 +78,10 @@ export function SendToJack({ state, said, from, onCancel, onSent }: Props) {
     <form className="as-send ticks" onSubmit={submit} noValidate>
       <p className="as-send-title">
         <span className="led is-live" aria-hidden="true" />
-        {t('send.title')}
+        {ct('send.title')}
       </p>
-      <p className="small muted">{t('send.intro')}</p>
-      {demo && <p className="notice notice-demo small">{t('send.demo')}</p>}
+      <p className="small muted">{ct('send.intro')}</p>
+      {demo && <p className="notice notice-demo small">{ct('send.demo')}</p>}
       <div className="form-row">
         <div className={`field${err('name') ? ' has-error' : ''}`}>
           <label htmlFor="as-name">{t('contact.name')}</label>
@@ -118,7 +120,7 @@ export function SendToJack({ state, said, from, onCancel, onSent }: Props) {
         </div>
       </div>
       <div className="field">
-        <label htmlFor="as-note">{t('send.note')}</label>
+        <label htmlFor="as-note">{ct('send.note')}</label>
         <textarea id="as-note" className="textarea as-note-input" rows={2} value={note} maxLength={600} onChange={(e) => setNote(e.target.value)} />
       </div>
       <div className="hp-field" aria-hidden="true">
@@ -133,10 +135,10 @@ export function SendToJack({ state, said, from, onCancel, onSent }: Props) {
       {(status === 'error' || (status === 'sending' && slow)) && <WeChatFallback reason={status === 'error' ? 'failed' : 'slow'} draft={message} />}
       <div className="row">
         <button type="submit" className="btn btn-primary btn-small" disabled={status === 'sending'}>
-          {status === 'sending' ? t('send.sending') : t('send.submit')}
+          {status === 'sending' ? ct('send.sending') : ct('send.submit')}
         </button>
         <button type="button" className="btn btn-ghost btn-small" onClick={onCancel} disabled={status === 'sending'}>
-          {t('send.cancel')}
+          {ct('send.cancel')}
         </button>
         <span className="hint">{t('contact.privacy')}</span>
       </div>

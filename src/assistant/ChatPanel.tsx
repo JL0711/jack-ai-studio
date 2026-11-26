@@ -4,7 +4,7 @@ import type { Chip } from '../ai/dialog';
 import { estimateText } from '../ai/summary';
 import { SendIcon } from '../components/Icons';
 import { useI18n } from '../i18n/I18nProvider';
-import { translate } from '../i18n/strings';
+import { chatT, useChatT } from './strings';
 import { useMedia, useReducedMotion } from '../lib/motion';
 import { EstimateCard } from './EstimateCard';
 import { RichText } from './RichText';
@@ -25,7 +25,7 @@ import './chat.css';
 const MAX = 2000;
 
 function Thinking({ lines }: { lines: string[] }) {
-  const { t } = useI18n();
+  const t = useChatT();
   return (
     <div className="as-thinking" role="status">
       <span className="as-thinking-head">
@@ -63,7 +63,7 @@ function AssistantTurn({
     <div className="as-msg as-bot" lang={lang === 'zh' ? 'zh-CN' : 'en'}>
       <span className="as-who">
         <i className="as-who-led" aria-hidden="true" />
-        {translate(lang, 'assistant.bot')}
+        {chatT(lang, 'assistant.bot')}
       </span>
       {turn.blocks.map((b, i) => {
         switch (b.t) {
@@ -138,7 +138,8 @@ function AssistantTurn({
 }
 
 export function ChatPanel({ variant }: { variant: 'drawer' | 'page' }) {
-  const { t, lang } = useI18n();
+  const { lang } = useI18n();
+  const t = useChatT();
   const { messages, busy, thinking, state, from } = useAssistant();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
