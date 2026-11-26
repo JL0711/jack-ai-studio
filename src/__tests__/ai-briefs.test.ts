@@ -95,6 +95,12 @@ describe('bug reports are priced as fixes', () => {
     expect(read('我的wordpress网站特别慢，打开要十几秒，想优化一下').kind).toBe('fix');
   });
 
+  it('a new tool that mentions today’s errors is not a fix', () => {
+    expect(read('我们现在手工录入经常有错误，有问题，想做个自动化').kind).toBe('automation');
+    expect(read('We want to automate data entry; the current process is broken and full of errors').kind).not.toBe('fix');
+    expect(read('The checkout on our site is broken and throws an error, please fix it').kind).toBe('fix');
+  });
+
   it('but "bug tracking system" and "existing documents" are not fixes', () => {
     expect(read('We need a bug tracking system for our team with login').kind).not.toBe('fix');
     const r = read('a chatbot that answers questions from our existing documents');

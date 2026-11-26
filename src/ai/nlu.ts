@@ -600,7 +600,9 @@ const ENTERPRISE =
   /(全部重做|全部推翻|数字化转型|全面上ai|所有部门|各个部门|全集团|\bdigital transformation\b|\b(?:across|for) (?:all|every|our|\d+|twelve|ten|several|multiple) (?:business units|departments|divisions|subsidiaries)\b|\bentire (?:company|organi[sz]ation|customer journey|business)\b|\benterprise[- ]wide\b)/i;
 /** Their own store on a platform: a data source to connect, not a shop to build. */
 const OWN_PLATFORM = /(\b(?:our|my)\s+|我们的?|我的|公司的?)(shopify|woocommerce|淘宝|京东|有赞|微店|amazon|ebay|etsy)/i;
-const NEW_BUILD = /(想做|新做|做一个|做个|开发一个|搭一个|建一个|重新做|\bbuild (?:a|an|me|us)\b|\bcreate (?:a|an)\b|\bnew (?:site|website|app|system|store|tool)\b|\bmake (?:a|an|me)\b)/i;
+// Asking for something new, even if it mentions what goes wrong today ("录入经常有错误，想自动化").
+const NEW_BUILD =
+  /(想做|新做|做一个|做个|开发一个|搭一个|建一个|重新做|想要|希望能|想自动化|想用ai|帮我(写|做|开发)|能不能做|\bbuild (?:a|an|me|us)\b|\bcreate (?:a|an)\b|\bnew (?:site|website|app|system|store|tool)\b|\bmake (?:a|an|me)\b|\b(?:we|i) (?:want|need|'d like|would like) (?:a|an|to)\b|\blooking for\b|\bautomate\b)/i;
 const ONE_PAGE = /(落地页|着陆页|单页|报名页|活动页|宣传页|\blanding ?page\b|\bone[- ]page\b|\bsingle[- ]page\b|\b(?:sign[- ]?up|registration|event) page\b)/i;
 const DATA_DASHBOARD = /(看板|仪表盘|dashboard|可视化|visuali[sz]|charts?|图表)/i;
 
@@ -657,7 +659,7 @@ export function understand(input: string, opts: { now?: Date; fallbackLang?: Lan
   const mod = score(t, MODIFY_SIGNALS);
   const bugScore = score(t, BUG_SIGNALS);
   // "之前的网站打不开了，想重新做一个" is a new build that mentions a bug.
-  const bug = bugScore.pos >= 3 && !(NEW_BUILD.test(t.low) && bugScore.pos < 5);
+  const bug = bugScore.pos >= 3 && !(NEW_BUILD.test(t.low) && bugScore.pos < 6);
   let modify = mod.pos >= 2.5 || bug;
   if (modify) mod.hits.forEach(remember);
   if (bug) bugScore.hits.forEach(remember);
