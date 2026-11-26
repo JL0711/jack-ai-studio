@@ -11,6 +11,7 @@ import './styles/components.css';
 import './styles/pages.css';
 import './styles/scenes.css';
 import './styles/effects.css';
+import './styles/demos.css';
 
 // Vite reports an on-demand file that failed to load (usually: the site was updated
 // while this tab was open). Reload once to get the new page; RouteErrorBoundary

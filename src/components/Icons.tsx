@@ -88,6 +88,35 @@ export const ArrowRightIcon = (p: P) => (
     <path d="M5 12h14M13 6l6 6-6 6" />
   </svg>
 );
+export const ArrowDownIcon = (p: P) => (
+  <svg {...base({ width: 18, height: 18, ...p })}>
+    <path d="M12 5v14M6 13l6 6 6-6" />
+  </svg>
+);
+export const SendIcon = (p: P) => (
+  <svg {...base({ width: 18, height: 18, ...p })}>
+    <path d="M4 12l16-8-6 16-2.5-6.5z" />
+    <path d="M11.5 13.5L20 4" />
+  </svg>
+);
+export const SparkIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M6.3 17.7l2.5-2.5M15.2 8.8l2.5-2.5" />
+  </svg>
+);
+export const CopyIcon = (p: P) => (
+  <svg {...base({ width: 16, height: 16, ...p })}>
+    <rect x="9" y="9" width="11" height="11" rx="1.5" />
+    <path d="M5 15V5a1 1 0 0 1 1-1h10" />
+  </svg>
+);
+export const RefreshIcon = (p: P) => (
+  <svg {...base({ width: 16, height: 16, ...p })}>
+    <path d="M20 11a8 8 0 0 0-14.3-4.9L4 8" />
+    <path d="M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16" />
+    <path d="M20 20v-4h-4" />
+  </svg>
+);
 export const CheckIcon = (p: P) => (
   <svg {...base({ width: 16, height: 16, strokeWidth: 2.4, ...p })}>
     <path d="M5 12.5l4.2 4.2L19 7" />

@@ -5,8 +5,10 @@ import { BridgeDiagram } from '../components/BridgeDiagram';
 import { Monitor, pad } from '../components/fx/ChannelMonitor';
 import { hasScene } from '../components/fx/Scenes';
 import { Scramble } from '../components/fx/Scramble';
-import { ArrowLeftIcon, ArrowRightIcon, ExpandIcon } from '../components/Icons';
+import { ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, ExpandIcon } from '../components/Icons';
 import { Lightbox } from '../components/Lightbox';
+import { TryPanel, scrollToTry } from '../components/TryPanel';
+import { demoFor } from '../demos/registry';
 import { SHOWCASE_PROJECTS, findShowcaseProject } from '../data/projects';
 import { useI18n } from '../i18n/I18nProvider';
 import { assetUrl } from '../lib/format';
@@ -76,6 +78,14 @@ export default function ShowcaseDetail() {
                 </dd>
               </div>
             </dl>
+            {demoFor(project.slug) && (
+              <div className="detail-actions">
+                <button type="button" className="btn btn-primary" onClick={scrollToTry}>
+                  {t('showcase.try')}
+                  <ArrowDownIcon width={16} height={16} />
+                </button>
+              </div>
+            )}
           </header>
 
           {hasScene(project.slug) && (
@@ -84,6 +94,8 @@ export default function ShowcaseDetail() {
             </div>
           )}
         </div>
+
+        <TryPanel key={project.slug} slug={project.slug} />
 
         <div className="detail-layout">
           <section className="detail-section">

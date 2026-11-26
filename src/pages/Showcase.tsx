@@ -5,6 +5,7 @@ import { ProjectScene } from '../components/fx/Scenes';
 import { Scramble } from '../components/fx/Scramble';
 import { ArrowRightIcon } from '../components/Icons';
 import { SHOWCASE_PROJECTS, type ShowcaseProject, type ShowcaseStatus } from '../data/projects';
+import { demoFor } from '../demos/registry';
 import { useI18n } from '../i18n/I18nProvider';
 import { hasFinePointer, useOnScreen } from '../lib/motion';
 import { useDocumentTitle } from '../lib/useDocumentTitle';
@@ -50,6 +51,7 @@ function ProjectTile({ project, index }: { project: ShowcaseProject; index: numb
           ))}
         </ul>
         <span className="tile-more" aria-hidden="true">
+          {demoFor(project.slug) && <span className="try-badge">{t('showcase.tryBadge')}</span>}
           {t('showcase.viewDetail')}
           <ArrowRightIcon width={16} height={16} />
         </span>

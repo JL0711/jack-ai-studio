@@ -1,0 +1,355 @@
+/* "Try it" demos on the showcase project pages (src/demos/*).
+   Shared building blocks so every demo looks like one family: a toolbar,
+   panes, a drop zone, a console log, compact tables and toggle chips.
+   A demo's own specifics live next to it (src/demos/<slug>/demo.css). */
+
+/* ---------- the section around a demo (TryPanel) ---------- */
+.try-section {
+  margin-top: 56px;
+  scroll-margin-top: calc(var(--header-h) + 16px);
+}
+.try-section:focus {
+  outline: none;
+}
+.try-head h2 {
+  margin-bottom: 0.4em;
+}
+.try-note {
+  color: var(--text-muted);
+  max-width: 78ch;
+  margin-bottom: 18px;
+}
+.try-sim {
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--demo);
+  color: var(--demo);
+}
+.try-body {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 20px;
+  min-height: 160px;
+}
+.try-start {
+  margin: 40px auto;
+  display: flex;
+}
+.try-loading {
+  margin: 40px 0;
+  text-align: center;
+}
+.try-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+.try-foot .muted {
+  margin-right: auto;
+}
+@media (max-width: 560px) {
+  .try-body {
+    padding: 14px 12px;
+    margin: 0 -4px;
+  }
+  .try-foot .muted {
+    flex-basis: 100%;
+  }
+}
+
+/* ---------- building blocks for demos ---------- */
+.demo {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.demo-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+.demo-bar .spacer {
+  flex: 1;
+}
+.demo-label {
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.demo-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: start;
+}
+.demo-pane {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  min-width: 0;
+}
+.demo-pane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 12px;
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.demo-pane-head .spacer {
+  flex: 1;
+}
+
+/* segmented buttons (aria-pressed) */
+.demo-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--border-strong);
+}
+.demo-seg button {
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 8px 13px;
+  border: 0;
+  border-right: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.demo-seg button:last-child {
+  border-right: 0;
+}
+.demo-seg button:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.demo-seg button[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* toggle chips */
+.demo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.demo-chip {
+  font: inherit;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+}
+.demo-chip:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.demo-chip[aria-pressed='true'] {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* file drop zone */
+.demo-drop {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 22px 16px;
+  border: 1px dashed var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.demo-drop:hover,
+.demo-drop.is-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.demo-drop input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.demo-drop:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* console-style log */
+.demo-log {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.demo-log .ok {
+  color: var(--live);
+}
+.demo-log .warn {
+  color: var(--wip);
+}
+.demo-log .err {
+  color: var(--danger);
+}
+.demo-log .dim {
+  color: var(--text-dim);
+}
+
+/* compact table that scrolls sideways instead of squashing */
+.demo-table-wrap {
+  overflow: auto;
+  max-height: 360px;
+  border: 1px solid var(--border);
+}
+.demo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+.demo-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  text-align: left;
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+.demo-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.demo-table tr.is-bad td {
+  background: var(--danger-bg);
+}
+.demo-table tr.is-skip td {
+  color: var(--text-dim);
+}
+
+/* status words: <span class="demo-state is-ok">OK</span> */
+.demo-state {
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  white-space: nowrap;
+}
+.demo-state.is-ok {
+  color: var(--live);
+}
+.demo-state.is-bad {
+  color: var(--danger);
+}
+.demo-state.is-skip {
+  color: var(--text-dim);
+}
+.demo-state.is-wip {
+  color: var(--wip);
+}
+
+/* a highlighted search hit inside quoted text */
+.demo-mark {
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--signal);
+  padding: 0 1px;
+}
+
+.demo-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.demo-stat {
+  display: grid;
+  gap: 4px;
+}
+.demo-stat b {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.demo-stat span {
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.demo-empty {
+  color: var(--text-dim);
+  text-align: center;
+  padding: 24px 8px;
+  font-size: 0.92rem;
+}
+.demo-kbd {
+  font-family: var(--mono);
+  font-size: 0.8em;
+  padding: 1px 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+}
+
+/* ---------- "Try it" hooks on the showcase pages ---------- */
+.try-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--pixel);
+  font-size: 12px;
+  line-height: 12px;
+  color: var(--accent);
+}
+.try-badge::before {
+  content: '▶';
+  font-size: 9px;
+}
+.tile-more .try-badge {
+  padding-right: 10px;
+  margin-right: 2px;
+  border-right: 1px solid var(--border-strong);
+}
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
