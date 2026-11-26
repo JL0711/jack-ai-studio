@@ -1,8 +1,8 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ChatIcon } from '../components/Icons';
 import { useI18n } from '../i18n/I18nProvider';
-import { openAssistant, useAssistant } from './store';
+import { closedForNavigation, getAssistant, openAssistant, useAssistant } from './store';
 
 const loadDrawer = () => import('./Drawer');
 const Drawer = lazy(loadDrawer);
@@ -54,7 +54,18 @@ export function AssistantHost() {
   useEffect(() => {
     if (open) setMounted(true);
   }, [open]);
-  const onClosed = useCallback(() => undefined, []);
+  const launcher = useRef<HTMLButtonElement>(null);
+  // Called as the drawer goes away. The button that opened it was removed while it was open,
+  // so focus would fall to <body>: give it to the new chat button, or to the page when a
+  // link in the chat was followed.
+  const onClosed = useCallback(() => {
+    const navigating = closedForNavigation();
+    if (getAssistant().open) return; // not closed: the drawer only switched between phone and wide layout
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return; // focus is already somewhere real
+    const target = (!navigating && launcher.current) || document.getElementById('main');
+    target?.focus({ preventScroll: true });
+  }, []);
 
   const slug = pathname.match(/^\/showcase\/([^/]+)/)?.[1];
   const unread = messages.length > 0 && !open;
@@ -63,6 +74,7 @@ export function AssistantHost() {
     <>
       {!hidden && !open && (
         <button
+          ref={launcher}
           type="button"
           className={`as-launcher${unread ? ' has-chat' : ''}${typing ? ' is-typing' : ''}`}
           onClick={() => openAssistant(pathname, lang, slug)}

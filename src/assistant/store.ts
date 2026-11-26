@@ -8,6 +8,7 @@
 
 import { useSyncExternalStore } from 'react';
 import type { ChatState, Input, Turn } from '../ai/dialog';
+import { STATE_VERSION } from '../ai/version';
 import type { Lang } from '../i18n/strings';
 
 export interface UserMessage {
@@ -48,6 +49,8 @@ function load(): Snapshot {
     if (!raw) return empty;
     const data = JSON.parse(raw) as Partial<Snapshot>;
     if (data.v !== SNAPSHOT_VERSION || !Array.isArray(data.messages)) return empty;
+    // A chat saved by an older version of the engine (another shape): start fresh.
+    if (data.state && data.state.v !== STATE_VERSION) return empty;
     return { ...empty, messages: data.messages, state: data.state ?? null, from: data.from ?? null };
   } catch {
     return empty;
@@ -98,8 +101,19 @@ export function openAssistant(from: string | null, lang: Lang, fromSlug?: string
   if (!snap.messages.length) void start(lang, fromSlug);
 }
 
-export function closeAssistant() {
+let closedByNavigation = false;
+
+/** Closes the drawer. `navigating`: a link in the chat is taking the visitor to another page. */
+export function closeAssistant(navigating = false) {
+  closedByNavigation = navigating;
   set({ open: false }, false);
+}
+
+/** Whether the last close was for a link (focus then goes to the new page, not the chat button). Reads once. */
+export function closedForNavigation(): boolean {
+  const v = closedByNavigation;
+  closedByNavigation = false;
+  return v;
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -110,37 +124,51 @@ function reducedMotion() {
 
 // Replies run one after another, in order: a greeting still being "worked out"
 // and a message sent right after it (e.g. from the contact page) both get their
-// turn, and nothing is dropped. (The UI disables its buttons while busy, so a
-// double click can't queue the same thing twice.)
+// turn, and nothing is dropped. A reset starts a new generation: jobs queued or
+// still running from before it stop instead of writing the old chat back.
 let chain: Promise<void> = Promise.resolve();
-function enqueue(job: () => Promise<void>): Promise<void> {
-  const next = chain.then(job, job);
+let generation = 0;
+function enqueue(job: (gen: number) => Promise<void>): Promise<void> {
+  const gen = generation;
+  const go = () => (gen === generation ? job(gen) : Promise.resolve());
+  const next = chain.then(go, go);
   chain = next.catch(() => undefined);
   return next;
 }
 
 function run(input: Input, lang: Lang, userText?: string): Promise<void> {
-  return enqueue(() => runOnce(input, lang, userText));
+  return enqueue((gen) => runOnce(input, lang, gen, userText));
 }
 
-async function runOnce(input: Input, lang: Lang, userText?: string) {
+/** The engine's new state, keeping "sent" if it was set while the reply was being worked out. */
+function withSent(next: ChatState): ChatState {
+  return snap.state?.sent && !next.sent ? { ...next, sent: true } : next;
+}
+
+async function runOnce(input: Input, lang: Lang, gen: number, userText?: string) {
   const engine = await loadEngine();
-  const messages = [...snap.messages];
-  if (userText) messages.push({ id: id(), role: 'user', text: userText, at: Date.now() });
+  if (gen !== generation) return;
+  const user: Message[] = userText ? [{ id: id(), role: 'user', text: userText, at: Date.now() }] : [];
   const state = snap.state ?? engine.initialState(lang);
   const { state: next, turn } = engine.respond(state, input, { now: new Date() });
+  const reply: Message = { id: id(), role: 'assistant', turn, at: Date.now() };
   // The answer is computed instantly; showing its steps for a moment makes the
   // calculation visible ("code is working it out") without slowing anyone down.
   if (turn.trace.length && !reducedMotion()) {
-    set({ messages, busy: true, thinking: [] });
+    set({ messages: [...snap.messages, ...user], busy: true, thinking: [] });
     for (let i = 0; i < turn.trace.length; i++) {
       await wait(i === 0 ? 120 : 170);
+      if (gen !== generation) return;
       set({ thinking: turn.trace.slice(0, i + 1) }, false);
     }
     await wait(160);
+    if (gen !== generation) return;
+    // Appended to the messages as they are now: anything added meanwhile (e.g. "sent!") stays.
+    set({ messages: [...snap.messages, reply], state: withSent(next), busy: false, thinking: null });
+    return;
   }
   // A new array: React compares by reference, so never mutate one already published.
-  set({ messages: [...messages, { id: id(), role: 'assistant', turn, at: Date.now() }], state: next, busy: false, thinking: null });
+  set({ messages: [...snap.messages, ...user, reply], state: withSent(next), busy: false, thinking: null });
 }
 
 /**
@@ -148,9 +176,9 @@ async function runOnce(input: Input, lang: Lang, userText?: string) {
  * checked when its turn comes, so React's double effects can't greet twice.
  */
 export function start(lang: Lang, fromSlug?: string, kind?: string): Promise<void> {
-  return enqueue(async () => {
+  return enqueue(async (gen) => {
     if (snap.messages.length) return;
-    await runOnce({ t: 'start', fromSlug, kind }, lang);
+    await runOnce({ t: 'start', fromSlug, kind }, lang, gen);
   });
 }
 
@@ -170,11 +198,12 @@ export async function sendInput(input: Input, lang: Lang, echo?: string) {
  * new pair of messages (used by the feature toggles on the estimate card).
  */
 export function recalcInPlace(input: Input, lang: Lang): Promise<void> {
-  return enqueue(() => recalcNow(input, lang));
+  return enqueue((gen) => recalcNow(input, lang, gen));
 }
 
-async function recalcNow(input: Input, lang: Lang) {
+async function recalcNow(input: Input, lang: Lang, gen: number) {
   const engine = await loadEngine();
+  if (gen !== generation) return;
   const state = snap.state ?? engine.initialState(lang);
   const { state: next, turn } = engine.respond(state, input, { now: new Date() });
   const messages = [...snap.messages];
@@ -185,13 +214,16 @@ async function recalcNow(input: Input, lang: Lang) {
       break;
     }
   }
-  const msg: AssistantMessage = { id: id(), role: 'assistant', turn, at: Date.now(), fresh: true };
   // Replace the newest reply only if it is the estimate being changed; after a later
   // message (e.g. "sent to Jack") the change gets its own message, so history stays true.
   const lastMsg = last >= 0 ? (messages[last] as AssistantMessage) : null;
-  if (lastMsg && lastMsg.turn.blocks.some((b) => b.t === 'estimate')) messages[last] = msg;
-  else messages.push(msg);
-  set({ messages, state: next });
+  if (lastMsg && lastMsg.turn.blocks.some((b) => b.t === 'estimate')) {
+    // Same id: React keeps the card mounted, so the chip that was tapped keeps keyboard focus.
+    messages[last] = { id: lastMsg.id, role: 'assistant', turn, at: Date.now(), fresh: true };
+  } else {
+    messages.push({ id: id(), role: 'assistant', turn, at: Date.now(), fresh: true });
+  }
+  set({ messages, state: withSent(next) });
 }
 
 /** A message from the assistant that doesn't come from the engine (e.g. "sent!"). */
@@ -201,6 +233,7 @@ export function pushAssistantText(text: string, lang: Lang) {
 }
 
 export function resetAssistant() {
+  generation++;
   set({ messages: [], state: null, thinking: null, busy: false, from: null });
 }
 

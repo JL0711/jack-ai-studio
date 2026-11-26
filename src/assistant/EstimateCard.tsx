@@ -16,16 +16,48 @@ interface Props {
   live: boolean;
   onToggle?: (f: FeatureId, on: boolean) => void;
   onSend?: () => void;
+  /** A "similar project" link was followed. */
+  onLink?: () => void;
   copyText?: string;
   /** Recalculated in place a moment ago (flash). */
   fresh?: boolean;
 }
 
-export function EstimateCard({ est, req, lang, live, onToggle, onSend, copyText: copyValue, fresh }: Props) {
+export function EstimateCard({ est, req, lang, live, onToggle, onSend, onLink, copyText: copyValue, fresh }: Props) {
   const t = (k: ChatKey, p?: Record<string, string | number>) => chatT(lang, k, p);
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>();
   useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const root = useRef<HTMLElement>(null);
+  // The chip that was just tapped: a tapped chip moves between "+ add" and "✓" (or goes away),
+  // so after the recalculation focus goes to its new button, or the first chip, or the card.
+  const refocus = useRef<FeatureId | null>(null);
+  const toggle = (f: FeatureId, on: boolean) => {
+    refocus.current = f;
+    onToggle?.(f, on);
+  };
+  useEffect(() => {
+    const card = root.current;
+    if (!card) return;
+    if (fresh) {
+      // Replay the flash: the card stays mounted across recalculations.
+      card.style.animation = 'none';
+      void card.offsetWidth;
+      card.style.animation = '';
+    }
+    const f = refocus.current;
+    if (!f) return;
+    refocus.current = null;
+    // Only if focus was lost with the old chip: never pull it back from somewhere the visitor moved on to.
+    const active = document.activeElement;
+    if (active && active !== document.body && !card.contains(active)) return;
+    const target =
+      card.querySelector<HTMLElement>(`[data-feature="${f}"]:not(:disabled)`) ??
+      card.querySelector<HTMLElement>('.as-chips button:not(:disabled)') ??
+      card;
+    target.focus({ preventScroll: true });
+  }, [est, fresh]);
 
   const featureLines = est.lines.filter((l) => l.feature);
   const inferred = new Set(req.inferred ?? []);
@@ -42,7 +74,7 @@ export function EstimateCard({ est, req, lang, live, onToggle, onSend, copyText:
   };
 
   return (
-    <article className={`as-card ticks${live ? '' : ' is-old'}${fresh ? ' is-fresh' : ''}`} lang={lang === 'zh' ? 'zh-CN' : 'en'}>
+    <article ref={root} tabIndex={-1} className={`as-card ticks${live ? '' : ' is-old'}${fresh ? ' is-fresh' : ''}`} lang={lang === 'zh' ? 'zh-CN' : 'en'}>
       <header className="as-card-head">
         <span className="as-card-kicker">
           <i className="led is-live" aria-hidden="true" />
@@ -90,7 +122,8 @@ export function EstimateCard({ est, req, lang, live, onToggle, onSend, copyText:
                   className="as-chip"
                   aria-pressed="true"
                   disabled={!live}
-                  onClick={() => l.feature && onToggle?.(l.feature, false)}
+                  data-feature={l.feature}
+                  onClick={() => l.feature && toggle(l.feature, false)}
                 >
                   <span aria-hidden="true">✓</span> {l.label[lang]}
                   {l.feature && inferred.has(l.feature) && <em className="as-guess">{t('est.guess')}</em>}
@@ -99,7 +132,7 @@ export function EstimateCard({ est, req, lang, live, onToggle, onSend, copyText:
             )}
             {live &&
               est.suggested.map((f) => (
-                <button key={f} type="button" className="as-chip is-add" aria-pressed="false" onClick={() => onToggle?.(f, true)}>
+                <button key={f} type="button" className="as-chip is-add" aria-pressed="false" data-feature={f} onClick={() => toggle(f, true)}>
                   <span aria-hidden="true">+</span> {FEATURES[f].label[lang]}
                 </button>
               ))}
@@ -194,7 +227,7 @@ export function EstimateCard({ est, req, lang, live, onToggle, onSend, copyText:
       {live && similar.length > 0 && (
         <p className="as-similar">
           {similar.map((p) => (
-            <Link key={p.slug} to={`/showcase/${p.slug}`} className="text-link">
+            <Link key={p.slug} to={`/showcase/${p.slug}`} className="text-link" onClick={onLink}>
               {p.title[lang]}
               <ArrowRightIcon width={14} height={14} />
             </Link>

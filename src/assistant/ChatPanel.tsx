@@ -11,6 +11,7 @@ import { RichText } from './RichText';
 import { SendToJack, sentText } from './SendToJack';
 import {
   closeAssistant,
+  getAssistant,
   markSent,
   pushAssistantText,
   recalcInPlace,
@@ -47,6 +48,7 @@ function AssistantTurn({
   liveEstimate,
   onChip,
   onSend,
+  onLink,
 }: {
   msg: AssistantMessage;
   /** The newest reply: its questions and suggestions can be tapped. */
@@ -55,9 +57,11 @@ function AssistantTurn({
   liveEstimate: boolean;
   onChip: (c: Chip) => void;
   onSend: () => void;
+  /** A link in the reply was followed (the phone drawer closes so the page shows). */
+  onLink: () => void;
 }) {
   const { turn } = msg;
-  const { state } = useAssistant();
+  const { state, busy } = useAssistant();
   const lang = turn.lang;
   return (
     <div className="as-msg as-bot" lang={lang === 'zh' ? 'zh-CN' : 'en'}>
@@ -84,6 +88,7 @@ function AssistantTurn({
                 fresh={msg.fresh}
                 onToggle={(f, on) => void recalcInPlace({ t: 'toggle', feature: f, on }, lang)}
                 onSend={onSend}
+                onLink={onLink}
                 copyText={liveEstimate && state ? estimateText(state) : undefined}
               />
             );
@@ -92,7 +97,7 @@ function AssistantTurn({
               <ul key={i} className="as-links">
                 {b.items.map((l) => (
                   <li key={l.to}>
-                    <Link to={l.to} className="text-link">
+                    <Link to={l.to} className="text-link" onClick={onLink}>
                       {l.label}
                     </Link>
                   </li>
@@ -100,7 +105,9 @@ function AssistantTurn({
               </ul>
             );
           case 'question': {
-            const open = live && state?.pending === b.slot;
+            // Not while a reply is being worked out: the pending question only changes when it lands,
+            // so a second tap would answer the same question twice.
+            const open = live && !busy && state?.pending === b.slot;
             return (
               <div key={i} className="as-question">
                 <p className="as-question-text">{b.text}</p>
@@ -112,7 +119,10 @@ function AssistantTurn({
                       type="button"
                       className="demo-chip"
                       disabled={!open}
-                      onClick={() => void sendInput({ t: 'answer', slot: b.slot, value: o.value }, lang, o.label)}
+                      onClick={() => {
+                        if (getAssistant().busy) return;
+                        void sendInput({ t: 'answer', slot: b.slot, value: o.value }, lang, o.label);
+                      }}
                     >
                       {o.label}
                     </button>
@@ -203,6 +213,12 @@ export function ChatPanel({ variant }: { variant: 'drawer' | 'page' }) {
     }
   };
 
+  // On a phone the drawer covers the page: close it (and release the scroll lock) when a link
+  // in the chat is followed, or the new page would open hidden behind it.
+  const onLink = () => {
+    if (variant === 'drawer' && phone) closeAssistant(true);
+  };
+
   const onChip = (c: Chip) => {
     if (busy) return;
     switch (c.t) {
@@ -219,7 +235,7 @@ export function ChatPanel({ variant }: { variant: 'drawer' | 'page' }) {
         void sendInput({ t: 'currency', currency: c.currency }, lang, c.label);
         break;
       case 'link':
-        if (variant === 'drawer' && phone) closeAssistant();
+        onLink();
         navigate(c.to);
         break;
     }
@@ -245,6 +261,7 @@ export function ChatPanel({ variant }: { variant: 'drawer' | 'page' }) {
               liveEstimate={m.id === lastEstimate && !sending}
               onChip={onChip}
               onSend={() => setSending(true)}
+              onLink={onLink}
             />
           ),
         )}

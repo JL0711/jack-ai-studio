@@ -1,20 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { estimate } from '../ai/estimate';
 import { fmtCnyRange, fmtDuration, fmtHours, fmtUsdRange } from '../ai/format';
-import { emptyRequirements, mergeRequirements, understand } from '../ai/nlu';
-import type { Kind, Money } from '../ai/types';
 import { useI18n } from '../i18n/I18nProvider';
-import { openAssistant, resetAssistant, sendText } from './store';
+import { formBrief } from './refine';
+import { getAssistant, openAssistant, resetAssistant, sendText } from './store';
 import { chatT } from './strings';
 import './chat.css';
-
-const TYPE_KIND: Record<string, Kind> = { web: 'site', rag: 'rag', local_ai: 'local_ai', automation: 'automation' };
-const BUDGET: Record<string, Money> = {
-  under_500: { min: 250, max: 500, currency: 'USD' },
-  '500_2000': { min: 500, max: 2000, currency: 'USD' },
-  '2000_5000': { min: 2000, max: 5000, currency: 'USD' },
-  over_5000: { min: 5000, max: 10000, currency: 'USD' },
-};
 
 /**
  * After the contact form is sent: the same code that powers the estimate chat
@@ -24,20 +15,24 @@ const BUDGET: Record<string, Money> = {
 export default function InstantEstimate({ message, projectType, budget }: { message: string; projectType: string; budget: string | null }) {
   const { lang } = useI18n();
   const t = (k: Parameters<typeof chatT>[1], p?: Record<string, string | number>) => chatT(lang, k, p);
-  const est = useMemo(() => {
-    const parsed = understand(message);
-    let req = mergeRequirements(emptyRequirements(), parsed, message);
-    if (!req.kind && TYPE_KIND[projectType]) req = { ...req, kind: TYPE_KIND[projectType] };
-    if (!req.budget && budget && BUDGET[budget]) req = { ...req, budget: BUDGET[budget] };
-    return estimate(req);
-  }, [message, projectType, budget]);
+  const brief = useMemo(() => formBrief(message, projectType, budget, lang), [message, projectType, budget, lang]);
+  const est = useMemo(() => estimate(brief.req), [brief]);
+  const refined = useRef(false);
   if (!est) return null;
 
   const refine = () => {
-    resetAssistant();
-    // Queued in order: the greeting first, then the visitor's own message.
+    // Already handed to the chat (a second click): just show it again.
+    if (refined.current) {
+      openAssistant('/contact', lang);
+      return;
+    }
+    refined.current = true;
+    // An earlier conversation in this tab is never wiped silently: ask, and otherwise continue it.
+    if (getAssistant().messages.length > 1 && window.confirm(t('instant.confirmNew'))) resetAssistant();
+    // Queued in order: the greeting first (if the chat is empty), then the visitor's message
+    // with the type and budget from the form, so the chat starts from the same numbers as this card.
     openAssistant('/contact', lang);
-    void sendText(message, lang);
+    void sendText(brief.chatText, lang);
   };
 
   return (
@@ -70,7 +65,7 @@ export default function InstantEstimate({ message, projectType, budget }: { mess
       <footer className="as-card-foot">
         <p className="as-disclaimer">{t('est.disclaimer')}</p>
         <div className="row">
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => void refine()}>
+          <button type="button" className="btn btn-secondary btn-small" onClick={refine}>
             {t('instant.refine')}
           </button>
         </div>

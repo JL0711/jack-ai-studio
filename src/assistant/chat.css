@@ -22,6 +22,10 @@
     opacity: 0;
   }
 }
+/* On a phone the dialog itself takes focus when it opens (see Drawer.tsx): no ring around the screen. */
+.as-drawer:focus {
+  outline: none;
+}
 .as-drawer-head {
   display: flex;
   align-items: center;

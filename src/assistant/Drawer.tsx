@@ -18,34 +18,41 @@ export default function Drawer({ open, onClosed }: { open: boolean; onClosed: ()
   const { messages } = useAssistant();
   const phone = useMedia('(max-width: 640px)');
   const panel = useRef<HTMLDivElement>(null);
-  const returnTo = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    returnTo.current = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeAssistant();
       // On a phone the drawer is modal: keep Tab inside it.
       if (e.key === 'Tab' && phone && panel.current) {
-        const f = panel.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], textarea, input, summary, [tabindex]:not([tabindex="-1"])');
+        const f = panel.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], textarea, input:not([tabindex="-1"]), summary, [tabindex]:not([tabindex="-1"])',
+        );
         if (!f.length) return;
         const first = f[0];
         const last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        const active = document.activeElement;
+        const outside = !active || active === panel.current || !panel.current.contains(active);
+        if (e.shiftKey && (active === first || outside)) {
           e.preventDefault();
           last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (!e.shiftKey && (active === last || outside)) {
           e.preventDefault();
           first.focus();
         }
       }
     };
     document.addEventListener('keydown', onKey);
-    if (phone) document.documentElement.classList.add('as-locked');
+    if (phone) {
+      document.documentElement.classList.add('as-locked');
+      // A modal dialog takes focus when it opens. The dialog itself, not the text box:
+      // focusing that would pop the keyboard up over the conversation.
+      if (panel.current && !panel.current.contains(document.activeElement)) panel.current.focus({ preventScroll: true });
+    }
     return () => {
       document.removeEventListener('keydown', onKey);
       document.documentElement.classList.remove('as-locked');
-      returnTo.current?.focus?.({ preventScroll: true });
+      // Where focus goes next is up to the host: the chat button is re-created after this.
       onClosed();
     };
   }, [open, phone, onClosed]);
@@ -65,6 +72,7 @@ export default function Drawer({ open, onClosed }: { open: boolean; onClosed: ()
       role="dialog"
       aria-modal={phone ? 'true' : 'false'}
       aria-labelledby="as-drawer-title"
+      tabIndex={-1}
     >
       <header className="as-drawer-head">
         <span className="as-drawer-led" aria-hidden="true" />
@@ -76,7 +84,7 @@ export default function Drawer({ open, onClosed }: { open: boolean; onClosed: ()
         <button type="button" className="icon-btn" onClick={reset} title={t('assistant.reset')} aria-label={t('assistant.reset')}>
           <RefreshIcon />
         </button>
-        <Link to="/quote" className="icon-btn" title={t('assistant.expand')} aria-label={t('assistant.expand')} onClick={() => closeAssistant()}>
+        <Link to="/quote" className="icon-btn" title={t('assistant.expand')} aria-label={t('assistant.expand')} onClick={() => closeAssistant(true)}>
           <ExpandIcon />
         </Link>
         <button type="button" className="icon-btn" onClick={() => closeAssistant()} title={t('assistant.close')} aria-label={t('assistant.close')}>

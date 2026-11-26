@@ -62,6 +62,13 @@ const zh = {
   'instant.kicker': '即时粗估',
   'instant.lead': '按你刚才写的需求，网页里的代码先算了一个大概：',
   'instant.refine': '在 AI 估价里细调',
+  'instant.confirmNew': '这个页面里已经有一段估价对话。清空它，用这条留言重新开始吗？（选「取消」会接在原来的对话后面。）',
+  'instant.type': '项目类型：{type}',
+  'instant.budget': '预算：{budget}',
+  'instant.budget.under_500': '500 美元以下',
+  'instant.budget.500_2000': '500–2,000 美元',
+  'instant.budget.2000_5000': '2,000–5,000 美元',
+  'instant.budget.over_5000': '5,000 美元以上',
 } as const;
 
 export type ChatKey = keyof typeof zh;
@@ -123,6 +130,13 @@ const en: Record<ChatKey, string> = {
   'instant.kicker': 'Instant rough estimate',
   'instant.lead': 'From what you just wrote, the code on this page worked out a first ballpark:',
   'instant.refine': 'Refine it in the estimate chat',
+  'instant.confirmNew': 'There is already an estimate chat in this tab. Clear it and start again from this message? (Cancel adds the message to the current chat.)',
+  'instant.type': 'Project type: {type}',
+  'instant.budget': 'Budget: {budget}',
+  'instant.budget.under_500': 'under $500',
+  'instant.budget.500_2000': '$500–2,000',
+  'instant.budget.2000_5000': '$2,000–5,000',
+  'instant.budget.over_5000': 'over $5,000',
 };
 
 export const CHAT_STRINGS: Record<Lang, Record<ChatKey, string>> = { zh, en };
