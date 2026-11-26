@@ -20,7 +20,7 @@
   box-shadow: var(--shadow-lift);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.2s, transform 0.25s var(--ease-out), background 0.2s;
+  transition: border-color 0.2s, transform 0.25s var(--ease-out), background 0.2s, opacity 0.2s;
   animation: as-launch-in 0.6s var(--ease-out) 1.2s backwards;
 }
 .as-launcher:hover {
@@ -88,6 +88,15 @@
   .as-launcher-icon {
     width: 44px;
     height: 44px;
+  }
+}
+/* Touch screens: out of the way while the visitor types in a field on the
+   page (it stays focusable, so Tab still reaches it and brings it back). */
+@media (max-width: 640px), (pointer: coarse) {
+  .as-launcher.is-typing {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
