@@ -62,10 +62,12 @@ export type FeatureId =
 
 export type Range = [number, number];
 
+export type Currency = 'USD' | 'CNY' | 'EUR' | 'GBP';
+
 export interface Money {
   min: number;
   max: number;
-  currency: 'USD' | 'CNY';
+  currency: Currency;
 }
 
 /** What the engine knows about the visitor's project so far. */
@@ -104,6 +106,11 @@ export interface Requirements {
   hardware?: 'have' | 'need_advice';
   /** Changes to an existing system: what access can the visitor give? */
   access?: 'code' | 'admin' | 'none';
+  /**
+   * Far bigger than one person's project: "like Uber / 美团" (platform) or
+   * "transform 12 business units" (enterprise). Priced as a first phase, said plainly.
+   */
+  scale?: 'platform' | 'enterprise';
 }
 
 export interface EstimateLine {
@@ -148,7 +155,8 @@ export interface Estimate {
   rush: boolean;
   /** When a deadline was given: can it be met, and how. */
   /** mvpHours: the work that fits before a deadline that is too short for everything. */
-  deadline?: { days: number; status: 'ok' | 'rush' | 'too_short'; mvpHours?: Range };
+  /** tight: only doable if the work lands at the low end of the range. */
+  deadline?: { days: number; status: 'ok' | 'rush' | 'too_short'; mvpHours?: Range; tight?: boolean };
   milestones: Milestone[];
   confidence: 'low' | 'medium' | 'high';
   budgetFit?: BudgetFit;

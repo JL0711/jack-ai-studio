@@ -20,6 +20,9 @@ export const PRICING = {
   usdPerHour: 30,
   /** Shown next to dollar prices in Chinese ("约 ¥…"); matches the contact form's budget labels. */
   cnyPerUsd: 7,
+  /** Rough rates for a budget given in euros or pounds (only used to compare it with the estimate). */
+  usdPerEur: 1.1,
+  usdPerGbp: 1.3,
   /** Hours a week Jack normally gives one project (sets the timeline). */
   weeklyHours: 20,
   /** Most hours a week he can give a rushed project. */
@@ -81,11 +84,13 @@ export const KINDS: Record<Kind, KindDef> = {
     ],
     similar: [],
     signals: [
-      ['官网', 3.5], ['企业网站', 3.5], ['公司网站', 3.5], ['网站', 1.6], ['网页', 1], ['落地页', 3.5], ['着陆页', 3.5],
-      ['个人主页', 3.5], ['作品集', 3], ['博客', 1.8], ['单页', 2], ['宣传页', 3], ['介绍页', 2.5], ['展示', 1], ['主页', 1.2],
-      [W('website'), 1.6], [W('web ?site'), 0.4], [W('landing ?page'), 3.5], [W('homepage'), 2], [W('company (site|website)'), 3.5],
-      [W('portfolio'), 3], [W('blog'), 1.8], [W('marketing (site|website)'), 3.5], [W('brochure'), 2.5], [W('one[- ]page'), 2],
+      ['官网', 3.5], ['企业网站', 3.5], ['公司网站', 3.5], ['网站', 2.2], ['网页', 2], ['落地页', 3.5], ['着陆页', 3.5],
+      ['个人主页', 3.5], ['作品集', 3], ['博客', 2.5], ['单页', 2], ['宣传页', 3], ['介绍页', 2.5], ['展示', 1], ['主页', 1.2],
+      ['报名页', 3], ['活动页', 3], ['h5', 2.5], ['页面', 1],
+      [W('website'), 2.2], [W('web site'), 2.2], [W('site'), 1.6], [W('landing ?page'), 3.5], [W('homepage'), 2], [W('company (site|website)'), 3.5],
+      [W('portfolio'), 3], [W('blog'), 2.5], [W('marketing (site|website)'), 3.5], [W('brochure'), 2.5], [W('one[- ]page'), 2],
       [W('wordpress'), 2.5], [W('webflow'), 2.5], [W('squarespace'), 2.5], [W('wix'), 2.5], [W('static site'), 3],
+      [W('(sign[- ]?up|registration|event) page'), 3], [W('p[aá]gina web|sitio web'), 2.5],
     ],
   },
   webapp: {
@@ -104,11 +109,11 @@ export const KINDS: Record<Kind, KindDef> = {
     similar: ['robotics-ops'],
     signals: [
       ['系统', 1.4], ['平台', 1.4], ['后台', 2.5], ['管理系统', 3.5], ['管理后台', 3.5], ['客户门户', 3.5], ['门户', 2],
-      ['saas', 3], ['会员系统', 3], ['权限', 1.5], ['审批', 2], ['工单', 3], ['crm', 3], ['erp', 2], ['oa', 1.2], ['内部工具', 3.5],
+      ['saas', 3], ['会员系统', 3], ['权限', 1.5], ['审批', 2], ['工单', 3], ['crm', 2.2], ['erp', 2], ['oa', 1.2], ['内部工具', 3.5], ['预约平台', 3],
       ['仪表盘', 2], ['数据看板', 2], ['排班', 2], ['库存', 2.5], ['进销存', 3.5], ['订单管理', 2.5], ['报名系统', 3], ['预约系统', 3],
-      ['课程平台', 2.5], ['在线教育', 2], ['管理平台', 3.5], ['web 应用', 3.5], ['web应用', 3.5], ['网页应用', 3.5], ['网页版', 1.5],
+      ['课程平台', 2.5], ['在线教育', 2], ['管理平台', 3.5], ['web 应用', 3.5], ['web应用', 3.5], ['网页应用', 3.5], ['网页版', 2.5],
       [W('web ?app(lication)?'), 3.5], [W('dashboard'), 2], [W('admin (panel|dashboard|portal)'), 3.5], [W('portal'), 2.5],
-      [W('saas'), 3], [W('platform'), 1.4], [W('crm'), 3], [W('internal tool'), 3.5], [W('management system'), 3.5],
+      [W('platform'), 1.4], [W('internal (tool|dashboard|app|system)'), 3.5], [W('management system'), 3.5],
       [W('booking system'), 3], [W('inventory'), 2.5], [W('ticketing'), 2.5], [W('membership'), 1.6], [W('marketplace'), 2],
       [W('mvp'), 1.5], [W('back[- ]?office'), 3], [W('client area'), 3],
     ],
@@ -130,7 +135,7 @@ export const KINDS: Record<Kind, KindDef> = {
     similar: [],
     signals: [
       ['电商', 3.5], ['商城', 3.5], ['网店', 3.5], ['在线商店', 3.5], ['购物车', 3.5], ['卖货', 2.5], ['商品', 1.4], ['独立站', 3.5],
-      ['shopify', 3.5], ['woocommerce', 3.5], ['下单', 1.4], ['带货', 2],
+      ['shopify', 2.5], ['woocommerce', 2.5], ['下单', 1.4], ['带货', 2], ['卖东西', 2.5], ['在线卖', 2.5], [/卖[\u4e00-\u9fff]{1,4}的/, 1.2], ['点单', 1.5],
       [W('e-?commerce'), 3.5], [W('online (store|shop)'), 3.5], [W('shop'), 1.8], [W('store'), 1.2], [W('cart'), 2.5],
       [W('checkout'), 1.6], [W('products'), 1.4], [W('sell (online|products)'), 3], [W('dropshipping'), 3],
     ],
@@ -193,8 +198,10 @@ export const KINDS: Record<Kind, KindDef> = {
     signals: [
       ['知识库', 4], ['文档问答', 4.5], ['问答', 1.6], ['rag', 4.5], ['检索', 2], ['pdf', 1.8], ['文档', 1.5], ['资料', 1.2],
       ['合同', 1.4], ['手册', 1.4], ['制度', 1.2], ['论文', 1.5], ['出处', 2.5], ['引用', 1.5], ['读文件', 2.5], ['读文档', 3],
-      ['根据文件回答', 3.5], ['内部资料', 2.5], ['向量', 2.5], ['语义搜索', 3],
-      [W('rag'), 4.5], [W('knowledge ?base'), 4], [W('(doc|document)s? q ?& ?a'), 4.5], [W('pdfs?'), 1.8], [W('documents'), 1.5],
+      ['根据文件回答', 3.5], ['内部资料', 2.5], ['内部文档', 2.5], ['知识问答', 3], ['问问题', 1.5], ['向量', 2.5], ['语义搜索', 3],
+      [/回答[^，,。.!?]{0,12}问题/, 2.5], ['答疑', 2],
+      [W('knowledge ?base'), 4], [W('(doc|document)s? q ?& ?a'), 4.5], [W('pdfs?'), 1.8], [W('documents'), 1.5],
+      [W('wiki'), 2.5], [W('confluence'), 3], [W('internal (docs|documentation|knowledge|wiki)'), 3], [W('ask (it )?questions (about|on|from)'), 2],
       [W('manuals?'), 1.4], [W('contracts'), 1.4], [W('policies'), 1.2], [W('citations?'), 2], [W('cite'), 2],
       [W('chat with (my|our|your|the|its|their)( [a-z]+)? (docs|documents|pdfs|files|data|policies|manuals|handbooks?|contracts|knowledge)'), 5], [W('(answer|answers|answering) questions (about|from|on) (my|our|the|their)( [a-z]+)? (docs|documents|pdfs|files|policies|manuals)'), 4.5], [W('search (my|our) (files|documents|docs)'), 3.5],
       [W('semantic search'), 3], [W('vector'), 2.5], [W('embeddings?'), 2.5],
@@ -215,8 +222,11 @@ export const KINDS: Record<Kind, KindDef> = {
     similar: ['local-doc-qa', 'ai-call-copilot'],
     signals: [
       ['客服', 3], ['聊天机器人', 4.5], ['机器人客服', 4.5], ['智能客服', 4.5], ['ai客服', 4.5], ['ai 客服', 4.5], ['自动回复', 3.5],
-      ['问答机器人', 4], ['微信机器人', 4], ['对话机器人', 4.5], ['ai助手', 2.5], ['ai 助手', 2.5],
+      ['问答机器人', 4], ['微信机器人', 4], ['对话机器人', 4.5], [/ai.{0,4}助手/, 3], ['写作助手', 3], ['群机器人', 4],
+      ['电话机器人', 4.5], ['自动接听', 3], ['接电话', 2], [/(像|跟|和|类似|仿)\s*(chatgpt|gpt|豆包|kimi|文心一言|通义)/, 3],
+      [W('(like|similar to|clone of|copy of) (chatgpt|gpt|claude|gemini)'), 3],
       [W('chat ?bot'), 4.5], [W('support (bot|assistant)'), 4], [W('customer (service|support)'), 2.5], [W('auto[- ]?repl(y|ies)'), 3.5],
+      [W('(phone|voice|calling) (bot|agent|assistant)'), 4], [W('answer(s|ing)? (the |our )?(phone|calls)'), 3], [W('ai (writing|copywriting|content) (assistant|tool)'), 3],
       [W('(whatsapp|telegram|discord|slack) bot'), 4], [W('virtual assistant'), 3], [W('ai assistant'), 2.5], [W('conversational'), 2],
     ],
   },
@@ -238,9 +248,10 @@ export const KINDS: Record<Kind, KindDef> = {
       ['本地部署', 4.5], ['私有化', 4.5], ['私有部署', 4.5], ['本地模型', 4.5], ['本地大模型', 5], ['内网', 2.5], ['不联网', 3], ['不能上云', 3], ['不出内网', 3],
       ['数据不出', 3.5], ['不上云', 3.5], ['ollama', 4.5], ['开源模型', 3.5], ['大模型部署', 4.5], ['部署大模型', 4.5], ['显卡', 2],
       ['gpu', 2], ['qwen', 2.5], ['llama', 2.5], ['deepseek', 2.5], ['lm studio', 3.5], ['vllm', 3.5], ['离线', 1.5],
+      ['没网', 3], ['不能联网', 3], ['离线翻译', 4], ['翻译工具', 2.5], ['显卡服务器', 3],
       [W('local (llm|ai|model)s?'), 5], [W('on[- ]?prem(ise)?'), 4.5], [W('self[- ]?host(ed|ing)?'), 4], [W('private ai'), 4],
-      [W('air[- ]?gapped'), 4.5], [W('ollama'), 4.5], [W('open[- ]source (llm|model)s?'), 3.5], [W('llama'), 2.5], [W('qwen'), 2.5],
-      [W('deepseek'), 2.5], [W('mistral'), 2.5], [W('gpu'), 2], [W('vllm'), 3.5], [W('lm studio'), 3.5],
+      [W('air[- ]?gapped'), 4.5], [W('open[- ]source (llm|model)s?'), 3.5], [W('mistral'), 2.5],
+      [W('(offline|local) translat(ion|or|e)'), 4], [W('translation tool'), 2.5],
     ],
   },
   automation: {
@@ -260,9 +271,10 @@ export const KINDS: Record<Kind, KindDef> = {
       ['自动化', 3], ['脚本', 3], ['批量', 2.5], ['自动生成', 2.5], ['excel', 2.5], ['表格', 1.4], ['word', 1.8], ['报表', 1.8],
       ['数据整理', 3], ['数据清洗', 3], ['重复', 1.4], ['省时间', 1.5], ['定时', 1.8], ['合并', 1.3], ['拆分', 1.3], ['格式转换', 2.5],
       ['转换格式', 2.5], ['证书', 2], ['发票', 1.4], ['群发', 2.5], ['宏', 1.5], ['vba', 3], ['工作流', 2.5], ['rpa', 3.5],
-      [W('automat(e|ion|ing)'), 3], [W('script'), 3], [W('batch'), 2.5], [W('excel'), 2.5], [W('spreadsheets?'), 2], [W('csv'), 2],
+      ['手动', 1.5], ['导数据', 2], ['自动起草', 2.5], ['自动录入', 2.5], ['起草', 1.2],
+      [W('automat(e|ion|ing)'), 3], [W('automatically'), 1.2], [W('script'), 3], [W('batch'), 2.5], [W('spreadsheets?'), 2], [W('csv'), 2],
       [W('word (docs?|files?|documents?)'), 2], [W('reports?'), 1.2], [W('data (cleaning|entry)'), 3], [W('repetitive'), 2],
-      [W('bulk'), 2.5], [W('vba'), 3], [W('macros?'), 2], [W('google sheets'), 2.5], [W('workflow'), 2], [W('rpa'), 3.5],
+      [W('bulk'), 2.5], [W('macros?'), 2], [W('google sheets'), 2.5], [W('workflow'), 2],
     ],
   },
   scraper: {
@@ -281,7 +293,9 @@ export const KINDS: Record<Kind, KindDef> = {
     similar: [],
     signals: [
       ['爬虫', 4.5], ['抓取', 3.5], ['采集', 3], ['爬取', 4.5], ['监控价格', 3], ['价格监控', 3], ['批量下载', 2],
-      [W('scrap(e|er|ing)'), 4.5], [W('crawl(er|ing)?'), 4], [W('extract data from'), 3], [W('price (monitor|tracking)'), 3],
+      ['竞品', 2], ['比价', 3], [/监控.{0,8}价格/, 3], ['价格变动', 2.5],
+      [W('scrap(e|er|ing)'), 4.5], [W('crawl(er|ing)?'), 4], [W('extract data from'), 3], [W('price (monitor(ing)?|tracking|tracker|alerts?)'), 3],
+      [W("monitor(s|ing)?( [a-z']+){0,3} prices?"), 3], [W("competitors?'? prices?"), 3], [W('listings'), 1.5],
     ],
   },
   integration: {
@@ -300,8 +314,10 @@ export const KINDS: Record<Kind, KindDef> = {
     signals: [
       ['对接', 3], ['接口', 2], ['api', 1.8], ['集成', 2.5], ['n8n', 4.5], ['zapier', 4.5], ['打通', 3], ['同步', 1.4], ['webhook', 3.5],
       ['飞书', 2.5], ['钉钉', 2.5],
-      [W('integrat(e|ion|ions)'), 3], [W('api'), 1.8], [W('n8n'), 4.5], [W('zapier'), 4.5], [W('make\\.com'), 4.5], [W('webhooks?'), 3.5],
+      [W('integrat(e|ion|ions)'), 3], [W('make\\.com'), 4.5], [W('webhooks?'), 3.5],
       [W('sync'), 1.4], [W('hubspot'), 2.5], [W('salesforce'), 2.5], [W('quickbooks'), 2.5], [W('airtable'), 2.5], [W('notion'), 1.8],
+      [W('two[- ]way sync|sync(ed)? both ways'), 3], [W('google sheets'), 2], [W('slack'), 1.5],
+      [/(录入|同步|导入|写入|对接|存)[^，,。.!?]{0,8}(crm|erp|hubspot|salesforce)/, 3], [W('(into|to|with) (our|my|the) (crm|erp)'), 3],
     ],
   },
   voice: {
@@ -319,7 +335,8 @@ export const KINDS: Record<Kind, KindDef> = {
     similar: ['ai-call-copilot'],
     signals: [
       ['语音', 3], ['转写', 4], ['转文字', 4], ['字幕', 3.5], ['录音', 2.5], ['会议纪要', 3.5], ['whisper', 4.5], ['听写', 3.5],
-      ['通话', 2], ['口述', 2.5],
+      ['通话', 2], ['口述', 2.5], ['播客', 3], ['音频', 2.5], ['视频', 1.5], ['会议录音', 3.5],
+      [W('podcasts?'), 3], [W('youtube'), 2], [W('videos?'), 1.5],
       [W('transcri(be|ption|bing)'), 4], [W('speech[- ]to[- ]text'), 4.5], [W('subtitles?'), 3.5], [W('captions?'), 2.5],
       [W('whisper'), 4.5], [W('meeting (notes|minutes)'), 3.5], [W('voice'), 2.5], [W('audio'), 2], [W('call recordings?'), 3.5],
       [W('dictation'), 3],
@@ -337,9 +354,10 @@ export const KINDS: Record<Kind, KindDef> = {
     similar: ['mac-windows-bridge'],
     signals: [
       ['桌面软件', 4.5], ['桌面应用', 4.5], ['exe', 3], ['windows软件', 4], ['windows 软件', 4], ['mac软件', 4], ['mac 软件', 4],
-      ['小工具', 2.2], ['客户端', 2], ['安装包', 2.5], ['免安装', 3],
+      ['小工具', 2.2], ['客户端', 2], ['安装包', 2.5], ['免安装', 3], ['插件', 2.5], ['chrome插件', 4], ['浏览器插件', 4], ['浏览器扩展', 4],
       [W('desktop (app|application|tool|software)'), 4.5], [W('windows (app|tool|software)'), 4], [W('mac (app|tool)'), 4],
-      [W('exe'), 3], [W('electron'), 3.5], [W('tauri'), 3.5], [W('installer'), 2],
+      [W('electron'), 3.5], [W('tauri'), 3.5], [W('installer'), 2],
+      [W('(chrome|browser|firefox|edge|safari) (extension|plugin|add-?on)s?'), 4], [W('extension'), 1.5],
     ],
   },
   fix: {
@@ -371,20 +389,37 @@ export const KINDS: Record<Kind, KindDef> = {
     signals: [
       ['咨询', 3], ['方案评估', 3.5], ['评估一下', 3], ['选型', 3.5], ['可行性', 3.5], ['请教', 2.5], ['顾问', 3], ['技术方案', 2.5],
       [W('consult(ing|ation)?'), 3], [W('advice'), 2.5], [W('feasibility'), 3.5], [W('architecture review'), 3.5], [W('code review'), 3],
-      [W('which (model|stack|framework|database)'), 2.5],
+      [W('which (model|stack|framework|database)'), 2.5], ['数字化转型', 3], ['从哪里开始', 2], ['不知道从哪', 2],
+      [W('digital transformation'), 3], [W('where to (start|begin)'), 2],
     ],
   },
 };
 
 /** Words that mean "change something that already exists". */
 export const MODIFY_SIGNALS: Signal[] = [
-  ['修改', 2], ['改版', 2.5], ['修复', 3], ['bug', 3], ['维护', 2.5], ['升级', 1.8], ['老网站', 3.5], ['旧网站', 3.5], ['现有', 2.2],
-  ['已有', 2.2], ['原来的', 2], ['原有', 2], ['二次开发', 4], ['接手', 3.5], ['改造', 3], ['加功能', 3], ['加个功能', 3], ['报错', 3],
-  ['重构', 3], ['迁移', 1.5], ['优化', 1.2], ['老系统', 3.5], ['旧系统', 3.5],
-  [W('fix(ing|es)?'), 3], [W('bugs?'), 3], [W('broken'), 3], [W('existing'), 2.8], [W('maintain|maintenance'), 2.5],
-  [W('redesign'), 2.5], [W('refactor(ing)?'), 3], [W('legacy'), 3], [W('take over'), 3.5], [W('add (a |some )?(new )?features?'), 3],
-  [W('improve(ments)?'), 1.4], [W('upgrade'), 1.8], [W('our (current|old) (site|website|app|system)'), 3.5], [W('revamp'), 2.5],
-  [W('speed up|slow'), 1.2],
+  ['修改', 2], ['改版', 2.5], ['维护', 2.5], ['升级', 1.8], ['老网站', 3.5], ['旧网站', 3.5], ['现有的', 2.2], ['现有', 1.8],
+  ['已有的', 2.2], ['已有', 1.8], ['原来的', 2], ['原有', 2], ['二次开发', 4], ['接手', 3.5], ['改造', 3], ['加功能', 3], ['加个功能', 3],
+  ['加个', 1.5], ['加一个', 1.5], ['重构', 3], ['迁移', 1.5], ['优化', 1.2], ['老系统', 3.5], ['旧系统', 3.5],
+  ['我的网站', 1.5], ['我们的网站', 1.5], ['我们网站', 1.5], ['我们的系统', 1.5], ['我们的小程序', 1.5],
+  [W('existing (site|website|app|system|code|codebase|store|shop|platform|project|plugin)'), 3], [W('existing'), 1.2],
+  [W('maintain|maintenance'), 2.5], [W('redesign'), 2.5], [W('refactor(ing)?'), 3], [W('legacy'), 3], [W('take over'), 3.5],
+  [W('add (a |an |some )?(new )?(features?|payments?|payment option|login|page|section|option|checkout)'), 3],
+  [W('upgrade'), 1.8], [W('our (current|old) (site|website|app|system)'), 3.5], [W('revamp'), 2.5],
+  [W('migrat(e|ing|ion)'), 1.5], [W('improve(ments)?'), 1],
+];
+
+/**
+ * Words that mean "something is broken". A bug report is priced as a fix of the
+ * existing system, not as a new build of whatever it mentions ("支付回调有问题"
+ * is not a request for a new payment system).
+ */
+export const BUG_SIGNALS: Signal[] = [
+  ['修复', 3], ['修bug', 3.5], ['改bug', 3.5], ['报错', 3], ['错误', 2], ['打不开', 3], ['进不去', 2.5], ['崩溃', 3], ['闪退', 3.5],
+  ['卡顿', 2.5], [/(特别|非常|很|太|超级|有点|越来越)慢/, 3], ['变慢', 3], ['加载慢', 3], ['有问题', 2], ['出问题', 2.5], ['不能用', 2.5],
+  ['用不了', 2.5], ['挂了', 2.5], ['白屏', 3], ['乱码', 2.5], ['没反应', 2.5], ['失效', 2],
+  [/\bbugs?\b(?!\s*(?:track|report|bount))/, 3], [W('fix(ing|es)?'), 3], [W('broken'), 3], [W('crash(es|ed|ing)?'), 3],
+  [W("(not|isn't|aren't|stopped|doesn't|does not|won't|can't|cannot) (working|work|load|loading|open|opening)"), 3], [W('errors?'), 2],
+  [W('(very |too |really |so )slow|slow(s)? down|loads? slowly'), 3], [W('speed (it )?up'), 2.5], [W('500 error|404|blank (page|screen)'), 3],
 ];
 
 export interface FeatureDef {
@@ -423,7 +458,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     hours: [8, 16],
     byKind: { miniprogram: [10, 18] },
     priority: 4,
-    signals: [['支付', 2], ['付款', 1.6], ['收款', 2], ['微信支付', 2.5], ['支付宝', 2.5], ['stripe', 2.5], ['paypal', 2.5], ['在线支付', 2.5], ['收费', 1], [W('payments?'), 2], [W('pay(ing)? online'), 2], [W('checkout'), 1.5], [W('stripe'), 2.5], [W('paypal'), 2.5], [W('billing'), 1.6]],
+    signals: [['支付', 2], ['付款', 1.6], ['收款', 2], ['微信支付', 2.5], ['支付宝', 2.5], ['stripe', 2.5], ['paypal', 2.5], ['在线支付', 2.5], ['在线付款', 2.5], ['付定金', 2.5], ['收定金', 2.5], ['定金', 1.5], ['收费', 1], [W('payments?'), 2], [W('pay(ing)? online'), 2], [W('checkout'), 1.5], [W('billing'), 1.6], [W('deposits?'), 1.2]],
     input: { zh: '收款账号（Stripe、微信支付商户号或支付宝）', en: 'A payment account (Stripe, WeChat Pay merchant or Alipay)' },
     risk: { zh: '支付账号的审核时间不由我们控制。', en: 'Payment account approval takes time we can’t control.' },
   },
@@ -443,7 +478,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '搜索和筛选', en: 'Search & filters' },
     hours: [4, 8],
     priority: 2,
-    signals: [['搜索', 1.6], ['筛选', 2], ['查询', 1.2], [W('search'), 1.4], [W('filters?'), 1.8]],
+    signals: [['搜索', 2], ['筛选', 2], ['查询', 1.2], [/\bsearch\b(?!\s*engines?)/, 2], [W('filters?'), 1.8]],
   },
   notifications: {
     label: { zh: '邮件 / 短信通知', en: 'Email & SMS notifications' },
@@ -469,13 +504,13 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '数据看板和图表', en: 'Dashboard & charts' },
     hours: [6, 12],
     priority: 2,
-    signals: [['看板', 2], ['仪表盘', 2], ['图表', 2], ['统计', 1.6], ['数据分析', 2], [W('dashboards?'), 1.6], [W('charts?'), 2], [W('analytics'), 2], [W('statistics|stats'), 1.6], [W('kpis?'), 2]],
+    signals: [['看板', 2], ['仪表盘', 2], ['图表', 2], ['统计', 1.6], ['数据分析', 2], [W('dashboards?'), 2], [W('charts?'), 2], [W('analytics'), 2], [W('statistics|stats'), 1.6], [W('kpis?'), 2]],
   },
   reports: {
     label: { zh: '报表导出', en: 'Reports & export' },
     hours: [4, 8],
     priority: 2,
-    signals: [['报表', 2], ['导出', 2], ['导出excel', 2.5], ['生成报告', 2], [W('reports?'), 1.6], [W('export'), 2], [W('csv export'), 2.5]],
+    signals: [['报表', 2], ['导出', 2], ['导出excel', 2.5], ['生成报告', 2], [W('reports?'), 2], [W('export'), 2], [W('csv export'), 2.5]],
   },
   maps: {
     label: { zh: '地图和定位', en: 'Maps & location' },
@@ -493,7 +528,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '自己更新内容的后台', en: 'Content you can update yourself' },
     hours: [5, 10],
     priority: 3,
-    signals: [['文章', 1.4], ['博客', 1.6], ['内容管理', 2.5], ['自己更新', 2.5], ['自己改内容', 2.5], ['新闻动态', 2], ['发布新闻', 2.2], ['发新闻', 2.5], ['更新新闻', 2.5], ['自己发', 2], ['自己改', 2], ['后台改文字', 2.5], [W('cms'), 2.5], [W('content management'), 2.5], [W('blog'), 1.6], [W('update (the )?(content|text|news) (myself|ourselves)'), 2.5], [W('news section'), 2]],
+    signals: [['文章', 1.4], ['博客', 2.2], ['内容管理', 2.5], ['自己更新', 2.5], ['自己改内容', 2.5], ['新闻动态', 2], ['发布新闻', 2.2], ['发新闻', 2.5], ['更新新闻', 2.5], ['自己发', 2], ['自己改', 2], ['后台改文字', 2.5], [W('cms'), 2.5], [W('content management'), 2.5], [W('blog'), 2.2], [W('update (the )?(content|text|news) (myself|ourselves)'), 2.5], [W('news section'), 2]],
   },
   seo: {
     label: { zh: 'SEO 基础优化', en: 'SEO basics' },
@@ -511,8 +546,10 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '对接第三方系统', en: 'Third-party integrations' },
     hours: [6, 14],
     priority: 3,
-    signals: [['对接', 2], ['第三方', 2], ['接口', 1.2], ['接入微信', 2.5], ['接微信', 2.5], ['接入企业微信', 2.5], ['接入飞书', 2.5], ['接入钉钉', 2.5], ['打印小票', 2.5], ['小票', 2], ['打印机', 2], ['飞鹅', 2.5], [W('receipt printers?'), 2.5], [W('(connect|integrate) (it )?(with|to) (wechat|whatsapp|slack|teams|telegram)'), 2.5], ['erp', 2], ['crm', 1.5], ['飞书', 2], ['钉钉', 2], ['企业微信', 2], ['quickbooks', 2.5], [W('integrat(e|ion|ions)'), 2], [W('third[- ]party'), 2], [W('quickbooks|hubspot|salesforce|airtable|zapier|slack|notion|google sheets|shopify api'), 2.5], [W('api'), 1]],
+    signals: [['对接', 2], ['第三方', 2], ['接口', 1.2], ['接入微信', 2.5], ['接微信', 2.5], ['微信群', 2.5], ['电话线路', 2.5], ['接听电话', 2.5], ['自动接听', 2], [W('(wechat|whatsapp|telegram|discord|slack|line) (groups?|bots?|channels?)'), 2.5], [W('phone (line|number|calls?)'), 2], ['接入企业微信', 2.5], ['接入飞书', 2.5], ['接入钉钉', 2.5], ['打印小票', 2.5], ['小票', 2], ['打印机', 2], ['飞鹅', 2.5], [W('receipt printers?'), 2.5], [W('(connect|integrate) (it )?(with|to) (wechat|whatsapp|slack|teams|telegram)'), 2.5], ['erp', 2], ['crm', 1.5], ['飞书', 2], ['钉钉', 2], ['企业微信', 2], ['quickbooks', 2.5], [W('integrat(e|ion|ions)'), 2], [W('third[- ]party'), 2], [W('quickbooks|hubspot|salesforce|airtable|zapier|slack|notion|google sheets|shopify api'), 2.5], [W('api'), 1]],
     input: { zh: '要对接系统的 API 文档或测试账号', en: 'API docs or a test account for the systems to connect' },
+    // A script reading one sheet or posting to one chat is lighter than wiring two business systems together.
+    byKind: { automation: [3, 8], scraper: [3, 8] },
   },
   migration: {
     label: { zh: '旧数据迁移', en: 'Data migration' },
@@ -524,7 +561,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '扫描件文字识别（OCR）', en: 'OCR for scanned files' },
     hours: [8, 16],
     priority: 3,
-    signals: [['ocr', 3], ['扫描件', 3], ['扫描版', 3], ['图片识别', 2.5], ['识别文字', 2.5], ['手写', 2.2], ['拍照', 1.4], [W('ocr'), 3], [W('scanned'), 3], [W('handwrit(ten|ing)'), 2.5], [W('image to text'), 2.5]],
+    signals: [['ocr', 3], ['扫描件', 3], ['扫描版', 3], ['图片识别', 2.5], ['识别文字', 2.5], ['手写', 2.2], ['拍照', 1.4], ['识别发票', 3], ['发票识别', 3], ['票据识别', 3], ['识别票据', 3], ['识别收据', 3], ['图片转文字', 3], [W('scanned'), 3], [W('handwrit(ten|ing)'), 2.5], [W('image to text'), 2.5], [W('(reads?|reading|extracts?|extracting|scans?|scanning|parses?|parsing|captures?)( [a-z]+){0,3} (invoices?|receipts?|bills)'), 3], [W('invoices? (ocr|scanning|extraction|processing)'), 3]],
     risk: { zh: 'OCR 的准确率取决于扫描质量。', en: 'OCR accuracy depends on scan quality.' },
   },
   ai_chat: {
@@ -562,7 +599,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '定时自动运行', en: 'Scheduled runs' },
     hours: [3, 6],
     priority: 2,
-    signals: [['定时', 2.5], ['每天自动', 2.5], ['每周自动', 2.5], ['每天跑', 2.2], ['自动运行', 2], ['每天早上', 1.6], ['每天更新', 2.2], ['每日更新', 2.2], ['每天抓', 2.2], ['每小时', 2], [W('scheduled?'), 2], [W('every (day|morning|night|week|hour)'), 2], [W('daily|nightly|hourly'), 1.6], [W('cron'), 2.5]],
+    signals: [['定时', 2.5], ['每天自动', 2.5], ['每周自动', 2.5], ['每天跑', 2.2], ['自动运行', 2], ['每天早上', 1.6], ['每天更新', 2.2], ['每日更新', 2.2], ['每天抓', 2.2], ['每小时', 2], ['每个月', 2], ['每月', 2], ['每周', 2], ['每星期', 2], [W('scheduled?'), 2], [W('every (day|morning|night|week|month|hour)'), 2], [W('daily|nightly|hourly'), 1.6], [W('weekly|monthly'), 2], [W('cron'), 2.5]],
   },
   finetune: {
     label: { zh: '模型微调', en: 'Model fine-tuning' },
@@ -575,7 +612,10 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     label: { zh: '完全离线（本地模型）', en: 'Offline on local models' },
     hours: [8, 16],
     priority: 4,
-    signals: [['离线', 2.5], ['本地运行', 2.5], ['不联网', 3], ['内网', 2.2], ['数据不出', 3], ['不上云', 3], ['不能上云', 3], ['不能放到云', 3], ['不能放云', 3], ['不能上传', 2.5], ['不出内网', 3], ['断网', 2.5], ['本地化部署', 2.5], ['本地部署', 2.5], ['私有化', 2.5], ['保密', 1.4], [W("can'?t (go|be (uploaded|sent)) to (the )?cloud"), 3], [W('no cloud'), 2.5], [W('(must|has to|needs to) stay (on[- ]?prem(ise)?|local|in[- ]house|on our (servers?|machines?))'), 3], [W('offline'), 2.5], [W('on[- ]?prem(ise)?'), 2.5], [W('air[- ]?gapped'), 3], [W('local(ly)? (only|hosted|models?)'), 2.5], [W('no internet'), 3], [W('(data|files) (stay|stays|must stay)'), 2.5], [W('self[- ]?hosted'), 2.2]],
+    signals: [['离线', 2.5], ['本地运行', 2.5], ['不联网', 3], ['内网', 2.2], ['数据不出', 3], ['不上云', 3], ['不能上云', 3], ['不能放到云', 3], ['不能放云', 3], ['不能上传', 2.5], ['不出内网', 3], ['断网', 2.5], ['本地化部署', 2.5], ['本地部署', 2.5], ['私有化', 2.5], ['保密', 1.4], ['不能出公司', 3], ['不出公司', 3], ['出不了公司', 3], ['数据不能出', 3], ['没网', 3], ['没有网', 3], ['不能联网', 3], ['自己的服务器', 2.5], ['我们的服务器', 2.5], ['本地服务器', 2.5],
+      [/(不能|不可以|不准|不允许|不想|禁止|不要)[^，。,.!?]{0,8}(上云|云端|云上|传到云|出公司|外传|外网)/, 3],
+      [/(?:\bnot|n't|\bnothing|\bnever|\bno)\b(?!\s*(?:mind|problem|issue|matter))[^.!?]{0,40}\b(?:the cloud|any cloud|cloud|openai|chatgpt)\b/, 3],
+      [W('(on|in) (our|my|their) own (servers?|machines?|hardware|computers?|infrastructure)'), 2.5], [W('own servers?'), 2], [W("can'?t (go|be (uploaded|sent)) to (the )?cloud"), 3], [W('no cloud'), 2.5], [W('(must|has to|needs to) stay (on[- ]?prem(ise)?|local|in[- ]house|on our (servers?|machines?))'), 3], [W('offline'), 2.5], [W('on[- ]?prem(ise)?'), 2.5], [W('air[- ]?gapped'), 3], [W('local(ly)? (only|hosted|models?)'), 2.5], [W('no internet'), 3], [W('(data|files) (stay|stays|must stay)'), 2.5], [W('self[- ]?hosted'), 2.2]],
   },
   mobile_web: {
     label: { zh: '手机适配', en: 'Mobile-friendly' },
@@ -612,9 +652,10 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
 
 /** Features that only make sense for some kinds (others ignore the match). */
 export const FEATURE_KINDS: Partial<Record<FeatureId, Kind[]>> = {
-  offline: ['rag', 'chatbot', 'voice', 'local_ai', 'webapp', 'desktop', 'automation'],
+  // Local models; other kinds take it only together with AI features (estimate.ts).
+  offline: ['rag', 'chatbot', 'voice', 'local_ai', 'desktop'],
   finetune: ['local_ai', 'rag', 'chatbot'],
-  ocr: ['rag', 'automation', 'webapp', 'chatbot'],
+  ocr: ['rag', 'automation', 'webapp', 'chatbot', 'integration', 'desktop', 'local_ai'],
   gui: ['automation', 'scraper', 'desktop', 'integration', 'voice', 'local_ai'],
   schedule: ['automation', 'scraper', 'integration', 'webapp', 'chatbot'],
   cms: ['site', 'webapp', 'ecommerce', 'miniprogram'],

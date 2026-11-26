@@ -228,7 +228,7 @@ describe('conversation', () => {
   it('declines out-of-scope work and off-topic questions politely', () => {
     const { turns } = run('zh', [{ t: 'text', text: '能帮我做游戏外挂吗' }, { t: 'text', text: '明天天气怎么样' }]);
     expect(texts(turns[0])).toContain('不在');
-    expect(texts(turns[1])).toContain('答不上来');
+    expect(texts(turns[1])).toContain('没太明白');
   });
 
   it('offers the currency switch when the budget currency was guessed', () => {

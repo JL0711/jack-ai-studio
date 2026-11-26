@@ -41,6 +41,8 @@ export type FaqId =
   | 'small'
   | 'models'
   | 'unsupported'
+  | 'personal_data'
+  | 'availability'
   | 'mvp'
   | 'first';
 
@@ -52,36 +54,47 @@ interface FaqRule {
 
 // Order matters: the first rule that matches wins.
 const RULES: FaqRule[] = [
-  { id: 'unsupported', zh: /(游戏外挂|外挂|刷单|刷量|黑客|破解|盗号|赌博|博彩|彩票|色情|翻墙代理|区块链|nft|加密货币|挖矿|炒币)/, en: /\b(cheats?|hack(ing)?|crack(ing)?|gambling|casino|betting|adult content|porn|nft|crypto(currency)?|mining|token launch|blockchain|fake reviews)\b/ },
+  {
+    id: 'unsupported',
+    zh: /(游戏外挂|外挂|刷单|刷量|刷好评|刷评|刷五星|刷评论|刷粉|水军|批量注册|养号|撞库|盗刷|盗号|黑进|入侵(别人|他人|对方)|破解(密码|软件|账号|版权)|赌博|博彩|彩票|色情|翻墙代理|区块链|nft|加密货币|虚拟币|挖矿|炒币)/,
+    en: /\b(cheats?|hack(?:ing)? into|hack (?:an?|someone|their|his|her|my ex)|(?:get|break|log) into\b[^.]{0,30}\b(?:account|instagram|facebook|email|phone|wechat)|my ex'?s|someone else'?s account|crack(?:ing)? (?:a |the )?(?:password|software|licen[cs]e)|gambling|casino|betting|adult content|porn|nft|crypto(?:currency)?|bitcoin|crypto mining|token launch|blockchain|fake (?:reviews?|accounts?|followers|likes)|bot accounts|mass (?:register|account creation)|spamm?(?:ing|er)?|buy followers)\b/,
+  },
+  // Personal contact data, or platforms whose terms forbid scraping: the scraper kind already says "public, permitted data only".
+  {
+    id: 'personal_data',
+    zh: /((爬|采集|抓取|抓|收集).{0,12}(手机号|电话号码|身份证|邮箱|微信号|个人信息|联系方式)|(领英|linkedin).{0,20}(爬|采集|抓|邮箱|联系方式|名单))/,
+    en: /(\b(?:scrap(?:e|ing)|crawl(?:ing)?|harvest(?:ing)?|extract(?:ing)?|collect(?:ing)?)\b[^.]{0,40}\b(?:linkedin|emails? addresses|emails|phone numbers|personal (?:data|info)|contact (?:details|info))\b|\blinkedin\b[^.]{0,40}\b(?:scrap(?:e|ing)|leads|emails|profiles)\b)/,
+  },
   { id: 'bot', zh: /(机器人吗|是机器人|真人|人工客服|转人工|你是ai|是ai吗|是不是ai|你是谁|和jack聊|找jack本人|jack本人)/, en: /\b(are you (a )?(bot|robot|human|real|ai)|real person|talk to (a )?(human|person|jack)|speak to (a )?(human|person|jack)|who are you)\b/ },
   { id: 'mvp', zh: /(精简版|简化版|先做核心|小一点的版本|最小版本|mvp|先做一部分|分期做|分两期|便宜点的版本)/, en: /\b(mvp|smaller version|cheaper version|lite version|phase (one|1)|first phase|minimum viable|start small)\b/ },
   { id: 'discount', zh: /(便宜|打折|优惠|少点|降价|能不能少|贵了|太贵|砍价)/, en: /\b(discount|cheaper|lower (the )?price|too expensive|negotiat|any deal|reduce the (price|cost))\b/ },
   { id: 'first', zh: /(第一版|先看到|多久能看到|什么时候能看到|demo什么时候|看到效果)/, en: /\b(first version|see (something|progress)|when can i see|first demo|early version)\b/ },
-  { id: 'payment', zh: /(怎么付|付款|分期|定金|首付|预付|付钱|支付方式|付费方式|怎么给钱|尾款)/, en: /\b(how (do|would|should) i pay|payment (terms|schedule|plan|methods?)|deposit|upfront|installments?|milestone payments?|pay you|paying you)\b/ },
+  { id: 'payment', zh: /(怎么付|如何付|付款方式|付款流程|怎么付款|分几次付|分期付|分期|定金多少|要付定金|首付|预付|付钱给你|怎么给钱|尾款|付款节点|支付方式|付费方式)/, en: /\b(how (do|would|should|can) (i|we) pay|payment (terms|schedule|plan|methods?)|upfront|installments?|milestone payments?|pay you|paying you|deposit (do|would) you)\b/ },
   { id: 'price', zh: /(多少钱|价格|收费|报价|费用|怎么算钱|贵不贵|价位|时薪|一小时多少|怎么收费)/, en: /\b(how much|price|pricing|cost|rates?|hourly|charge|quote|fees?|expensive)\b/ },
   { id: 'timeline', zh: /(多久|多长时间|几天|几周|工期|周期|什么时候能做完|多快)/, en: /\b(how long|timeline|turnaround|how fast|how quickly|when (can|could|will) (it|you) (be )?(done|finished|ready)|duration|eta)\b/ },
   { id: 'process', zh: /(流程|怎么合作|步骤|合作方式|怎么开始|下一步|如何开始|怎么做)/, en: /\b(process|how do (you|we) (work|start)|how does (it|this) work|next steps?|get started|how to start|workflow with you)\b/ },
-  { id: 'hours', zh: /(回复|多久回|几点|时差|在线|工作时间|什么时候回|联系得上|找得到你)/, en: /\b(reply|respond|response time|time ?zones?|available|availability|working hours|office hours|online now|reach you)\b/ },
+  { id: 'availability', zh: /(档期|排期|什么时候能开始|什么时候可以开始|多久能开始|有空吗|有没有空|忙不忙|能接吗|还接单|接不接)/, en: /\b(availability|available to start|when (can|could) you start|are you available|have (the )?capacity|your schedule|(want|like|plan|hope) to start (in|on|next|this|around))\b/ },
+  { id: 'hours', zh: /(多久回|多久能回|回复(时间|时段|速度)|回复.{0,2}快|回得快|回复及时|几点(回|上班|在线)|时差|工作时间|什么时候回|联系得上|找得到你|你在线吗|在线吗)/, en: /\b(reply time|response time|how (fast|quickly|soon) (do|will|can) you (reply|respond|answer)|time ?zones?|working hours|office hours|online now|reach you|when do you reply)\b/ },
   { id: 'privacy', zh: /(保密|nda|隐私|数据安全|泄露|泄密|安全吗|数据会不会|资料安全)/, en: /\b(nda|confidential(ity)?|privacy|secure|security|data (safe|safety|protection|leak)|gdpr|leak)\b/ },
-  { id: 'source', zh: /(源码|源代码|代码归|版权|知识产权|代码给我|交付代码)/, en: /\b(source code|ownership|own the code|ip rights|intellectual property|who owns|hand ?over)\b/ },
-  { id: 'maintenance', zh: /(维护|售后|后期|出了问题|出问题|保修|长期支持|以后改)/, en: /\b(maintenance|maintain|support after|after (launch|delivery)|bugs? after|warranty|ongoing support|retainer|updates? later)\b/ },
+  { id: 'source', zh: /(源码|源代码|代码归|版权|知识产权|代码给我|交付代码)/, en: /\b(source code|ownership of the code|own the code|ip rights|intellectual property|who owns|hand ?over (the )?(code|source|repo))\b/ },
+  { id: 'maintenance', zh: /(维护|售后|出了问题|出问题怎么办|保修|长期支持|以后改)/, en: /\b(maintenance|maintain|support after|after (launch|delivery)|bugs? after|warranty|ongoing support|retainer|updates? later)\b/ },
   { id: 'revisions', zh: /(修改几次|改几次|返工|不满意|改到满意|无限修改)/, en: /\b(revisions?|changes later|not happy|unlimited changes|rework)\b/ },
   // Not plain "合同": clients often have contracts as documents to process.
   { id: 'contract', zh: /(签合同|签约|合同怎么|有没有合同|要不要合同|需要签|正式合同|合作协议|签协议)/, en: /\b(sign (a|the) contract|contract to sign|written agreement|do you (use|sign) (a )?contracts?)\b/ },
-  { id: 'meeting', zh: /(开会|视频|电话|语音|见面|通话|面谈|腾讯会议)/, en: /\b(call|meeting|zoom|video|phone|meet|google meet|teams call)\b/ },
+  { id: 'meeting', zh: /(开会|视频会议|视频通话|打个电话|通个电话|电话沟通|电话聊|语音聊|见个面|见面聊|当面聊|面谈|腾讯会议|约个时间|约时间聊)/, en: /\b((schedule|book|have|set up|hop on|jump on) a (quick )?(call|meeting|zoom)|video call|phone call with|call with you|meet (in person|you)|zoom|google meet|teams call)\b/ },
   { id: 'longterm', zh: /(长期|兼职|全职|驻场|招聘|入职|包月合作|长期合作)/, en: /\b(long[- ]term|part[- ]time|full[- ]time|hire you|employ|contract role|ongoing work|monthly retainer)\b/ },
-  { id: 'team', zh: /(团队|几个人|一个人做|外包公司|公司规模|有几个人)/, en: /\b(team|one person|solo|agency|company size|just you|by yourself)\b/ },
+  { id: 'team', zh: /(你们团队|你们有几个人|你一个人|一个人做|外包公司|公司规模|就你一个)/, en: /\b(your team|how many (people|developers)|one[- ]person|solo|agency|company size|just you|by yourself|work alone)\b/ },
   { id: 'hardware', zh: /(显卡|配置|电脑要求|服务器配置|显存|内存多大|什么电脑)/, en: /\b(hardware|gpu|specs|vram|ram|what (computer|machine|server))\b/ },
   { id: 'models', zh: /(什么模型|哪个模型|用gpt|gpt还是|模型选|deepseek还是|qwen还是|开源模型还是)/, en: /\b(which model|what model|gpt or|llama or|claude or|open[- ]source or|model choice)\b/ },
-  { id: 'invoice', zh: /(发票|收据|报销凭证)/, en: /\b(invoice|receipt|tax)\b/ },
+  { id: 'invoice', zh: /(开发票|开票|能开发票|提供发票|要发票|发票怎么|开收据|收据怎么)/, en: /\b((send|issue|provide|give) (me |us )?(an? )?(invoice|receipt)|invoice me|tax invoice|vat invoice)\b/ },
   { id: 'platform', zh: /(upwork|fiverr|猪八戒|程序员客栈|电鸭|平台交易|担保交易)/, en: /\b(upwork|fiverr|freelancer\.com|escrow|through a platform)\b/ },
   { id: 'refund', zh: /(退款|退钱|不满意怎么办)/, en: /\b(refund|money back)\b/ },
   { id: 'china', zh: /(国内客户|在国内|大陆|微信付款|微信转账|支付宝付|人民币结算|国内能用)/, en: /\b(in china|mainland|rmb|wechat pay you|alipay you)\b/ },
   { id: 'small', zh: /(小活|小项目|很小的|简单的活|小需求|接小单)/, en: /\b(small (job|task|project|fix)|quick (fix|job)|tiny)\b/ },
   { id: 'stack', zh: /(技术栈|用什么技术|什么语言写|框架|技术选型)/, en: /\b(stack|technolog(y|ies)|framework|what language|tech choices?)\b/ },
-  { id: 'portfolio', zh: /(作品|案例|做过什么|做过哪些|以前做过|成功案例|经验)/, en: /\b(examples?|portfolio|previous work|case stud(y|ies)|samples?|past projects|what have you built|experience)\b/ },
+  { id: 'portfolio', zh: /(作品|案例|做过什么|做过哪些|以前做过|成功案例|经验)/, en: /\b(examples? of your work|your portfolio|portfolio|previous work|case stud(y|ies)|work samples?|past projects|what have you built|your experience|similar projects)\b/ },
   { id: 'demo', zh: /(试用|演示|体验一下|试一下|试试)/, en: /\b(demo|try (it|one|them)|trial|test drive|play with)\b/ },
-  { id: 'about', zh: /(在哪|哪里人|哪国|介绍一下|关于你|你的背景|美国哪)/, en: /\b(where are you|about you|based|location|background|introduce yourself)\b/ },
+  { id: 'about', zh: /(你在哪|哪里人|哪国|介绍一下你|关于你|你的背景|美国哪)/, en: /\b(where are you( based)?|about you|based in|your location|your background|introduce yourself)\b/ },
   { id: 'language', zh: /(会说英文|英文沟通|中文沟通|说中文|语言沟通)/, en: /\b(speak (chinese|mandarin|english)|chinese speaking|language barrier)\b/ },
 ];
 
@@ -412,6 +425,25 @@ export function answerFaq(id: FaqId, ctx: FaqContext): FaqAnswer {
     case 'language':
       return {
         text: T(lang, `中文和英文都可以，需求、文档和交付说明也可以用任一种语言写。`, `Chinese or English, both fine; requirements, documents and handover notes can be in either.`),
+      };
+    case 'personal_data':
+      return {
+        text: T(
+          lang,
+          `采集个人联系方式（邮箱、手机号这类），或者从 LinkedIn 这类条款禁止采集的平台抓数据，Jack 不接。公开、允许采集的数据可以做，比如商品价格、公开的新闻和列表。`,
+          `Collecting personal contact details (emails, phone numbers), or scraping platforms whose terms forbid it such as LinkedIn, isn't something Jack takes on. Public data that may be collected is fine, e.g. product prices or public listings and news.`,
+        ),
+        ask: [T(lang, '我想监控几个网站上的商品价格', 'I want to track product prices on a few sites')],
+      };
+    case 'availability':
+      return {
+        text: T(
+          lang,
+          `能不能按你想要的时间开工，要看 Jack 当时的排期：把需求和希望开始的时间发给他，回复时段内 2 小时内回复。可以先在这里把估价算好，一起发过去。`,
+          `Whether work can start when you'd like depends on Jack's schedule at the time: send him your brief and preferred start date, and he replies within 2 hours during reply hours. You can work out the estimate here first and send both together.`,
+        ),
+        ask: [T(lang, '我先说说需求', 'Let me describe my project')],
+        contact: true,
       };
     case 'unsupported':
       return {

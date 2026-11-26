@@ -5,14 +5,16 @@
 import { SHOWCASE_PROJECTS } from '../data/projects';
 import { DEMOS } from '../demos/registry';
 import { FEATURES, KINDS, PRICING } from './catalog';
-import { estimate } from './estimate';
+import { estimate, lowerFirst } from './estimate';
 import { fmtCnyRange, fmtDuration, fmtHours, fmtInt, fmtUsdRange, joinList } from './format';
 import { answerFaq, matchFaq, type FaqId } from './knowledge';
-import { detectLang, emptyRequirements, mergeRequirements, parseNumber, prepare, toUsd, understand } from './nlu';
+import { detectLang, emptyRequirements, mergeRequirements, parseNumber, prepare, readDuration, toUsd, understand } from './nlu';
 import { SLOTS, nextSlot, slotOption } from './slots';
 import type { Estimate, FeatureId, Kind, Lang, Range, Requirements, SlotId } from './types';
 
-export const STATE_VERSION = 4;
+import { STATE_VERSION } from './version';
+
+export { STATE_VERSION };
 
 export interface ChatState {
   v: number;
@@ -87,6 +89,8 @@ export function initialState(lang: Lang): ChatState {
 
 const T = (lang: Lang, zh: string, en: string) => (lang === 'zh' ? zh : en);
 const KIND_IDS = Object.keys(KINDS) as Kind[];
+/** "a website", "an online store", "an AI chatbot". */
+const withArticle = (s: string) => `${/^[aeiou]/i.test(s) ? 'an' : 'a'} ${s}`;
 
 // ---------- small talk ----------
 
@@ -95,7 +99,7 @@ function smallTalk(text: string): Small | null {
   const s = prepare(text).low.replace(/[!！.。~～,，?？\s]+$/g, '');
   if (s.length > 24) return null;
   if (/^(你好|您好|嗨|哈喽|hello|hi|hey|在吗|在不在|有人吗|早上好|下午好|晚上好|good (morning|afternoon|evening))/.test(s)) return 'greet';
-  if (/(谢谢|感谢|多谢|thanks|thank you|thx|ty)/.test(s)) return 'thanks';
+  if (/(谢谢|感谢|多谢|\bthanks\b|\bthank you\b|^thx$|^ty$)/.test(s)) return 'thanks';
   if (/^(再见|拜拜|bye|goodbye|see you|回头聊)/.test(s)) return 'bye';
   if (/^(好的?|好吧|明白了?|了解|知道了|嗯+|哦+|ok|okay|got it|cool|great|nice|sounds good|alright)$/.test(s)) return 'ok';
   return null;
@@ -146,8 +150,9 @@ function contactChip(lang: Lang): Chip {
 function moneyText(m: Requirements['budget'], lang: Lang): string {
   if (!m) return '';
   const [lo, hi] = toUsd(m, PRICING.cnyPerUsd);
-  if (m.currency === 'CNY') {
-    const v = m.min === m.max || m.min < m.max * 0.7 ? `¥${fmtInt(m.max)}` : `¥${fmtInt(m.min)}–${fmtInt(m.max)}`;
+  if (m.currency !== 'USD') {
+    const sym = { CNY: '¥', EUR: '€', GBP: '£' }[m.currency];
+    const v = m.min === m.max || m.min < m.max * 0.7 ? `${sym}${fmtInt(m.max)}` : `${sym}${fmtInt(m.min)}–${fmtInt(m.max)}`;
     return T(lang, `${v}（约 $${fmtInt(hi)}）`, `${v} (about $${fmtInt(hi)})`);
   }
   return lo < hi * 0.7 || lo === hi ? `$${fmtInt(hi)}` : `$${fmtInt(lo)}–${fmtInt(hi)}`;
@@ -169,7 +174,7 @@ function featureNames(est: Estimate, req: Requirements, lang: Lang): string[] {
   for (const l of est.lines) {
     if (!l.feature) continue;
     const label = l.label[lang];
-    names.push(lang === 'en' ? label.charAt(0).toLowerCase() + label.slice(1) : label);
+    names.push(lang === 'en' ? lowerFirst(label) : label);
   }
   void req;
   return names;
@@ -178,12 +183,15 @@ function featureNames(est: Estimate, req: Requirements, lang: Lang): string[] {
 function understandingLead(s: ChatState, est: Estimate): string {
   const { req, lang } = s;
   const def = KINDS[est.kind];
+  const on = req.alsoKind && req.alsoKind !== 'fix' ? KINDS[req.alsoKind].short : null;
   const what =
     est.kind === 'fix'
-      ? T(lang, '你想改一个现有的系统', 'you want changes to an existing system')
+      ? on
+        ? T(lang, `你现有的${on.zh}出了问题，要修好`, `something in your existing ${on.en} needs fixing`)
+        : T(lang, '你想改一个现有的系统', 'you want changes to an existing system')
       : est.modify
         ? T(lang, `你想改一个现有的${def.short.zh}`, `you want changes to an existing ${def.short.en}`)
-        : T(lang, `你想做一个${def.short.zh}`, `you want ${/^[aeiou]/i.test(def.short.en) ? 'an' : 'a'} ${def.short.en}`);
+        : T(lang, `你想做一个${def.short.zh}`, `you want ${withArticle(def.short.en)}`);
   const counted = [...featureNames(est, req, lang).slice(0, 4), ...quantityBits(req, lang)];
   let line = T(lang, `明白了：${what}。`, `Got it: ${what}.`);
   if (counted.length) line += T(lang, `算进去的有：${counted.join('、')}。`, ` Counted in: ${counted.join(', ')}.`);
@@ -193,7 +201,7 @@ function understandingLead(s: ChatState, est: Estimate): string {
 
 function describeChanges(a: Requirements, b: Requirements, lang: Lang): string[] {
   const out: string[] = [];
-  if (a.kind !== b.kind && b.kind) out.push(T(lang, `改成${KINDS[b.kind].short.zh}`, `a ${KINDS[b.kind].short.en} instead`));
+  if (a.kind !== b.kind && b.kind) out.push(T(lang, `改成${KINDS[b.kind].short.zh}`, `${withArticle(KINDS[b.kind].short.en)} instead`));
   for (const f of Object.keys(FEATURES) as FeatureId[]) {
     const was = a.features[f] === true;
     const now = b.features[f] === true;
@@ -250,7 +258,7 @@ function budgetRemark(s: ChatState, est: Estimate): { key: string; text: string;
       text = T(
         lang,
         `你的预算 ${b}${sp(b)}比估价高不少，够用。${extra.length ? `如果想用足预算，可以考虑把${joinList(extra, 'zh')}也做进去。` : ''}`,
-        `Your budget of ${b} is comfortably above the estimate.${extra.length ? ` If you'd like to use it, ${joinList(extra, 'en').toLowerCase()} could be added.` : ''}`,
+        `Your budget of ${b} is comfortably above the estimate.${extra.length ? ` If you'd like to use it, ${joinList(extra.map(lowerFirst), 'en')} could be added.` : ''}`,
       );
       break;
     }
@@ -271,7 +279,7 @@ function budgetRemark(s: ChatState, est: Estimate): { key: string; text: string;
         text = T(
           lang,
           `你的预算 ${b}${sp(b)}比估价低。可以先做精简版：先不做${joinList(dropped, 'zh')}，约 **${fmtUsdRange(mvp.usd)}**，其余功能以后再加。`,
-          `Your budget of ${b} is below the estimate. A lean first version without ${joinList(dropped, 'en').toLowerCase()} comes to about **${fmtUsdRange(mvp.usd)}**; the rest can follow later.`,
+          `Your budget of ${b} is below the estimate. A lean first version without ${joinList(dropped.map(lowerFirst), 'en')} comes to about **${fmtUsdRange(mvp.usd)}**; the rest can follow later.`,
         );
         chips.unshift({ t: 'mvp', key: 'mvp', label: T(lang, '按精简版重算', 'Recalculate as lean version'), drop: mvp.drop });
       } else {
@@ -297,6 +305,13 @@ function deadlineRemark(est: Estimate, lang: Lang): { key: string; text: string 
       lang,
       `**${d.days} 天做完全部来不及。** 这个时间里可以先交付最核心的一部分（约 ${fmtHours(h, 'zh')}的工作量），其余的接着补上。`,
       `**${d.days} days isn't enough for all of it.** In that time the most essential part (about ${fmtHours(h, 'en')} of work) can be delivered, with the rest following.`,
+    ) };
+  }
+  if (d?.tight) {
+    return { key: `deadline:tight:${d.days}`, text: T(
+      lang,
+      `你要的 ${d.days} 天比较紧：按加急节奏（每周约 ${PRICING.maxWeeklyHours} 小时，价格 ×${PRICING.rushMultiplier}）要 ${fmtDuration(est.days, 'zh')}。范围小一点能赶上；范围大的话，先在 ${d.days} 天内交付最核心的部分。`,
+      `Your ${d.days} days are tight: at a rush pace (about ${PRICING.maxWeeklyHours} hours a week, ×${PRICING.rushMultiplier}) it takes ${fmtDuration(est.days, 'en')}. A smaller scope fits; otherwise the core part comes within ${d.days} days and the rest after.`,
     ) };
   }
   if (est.rush) {
@@ -434,6 +449,23 @@ function estimateTurn(s0: ChatState, before: Requirements, opts: { now: Date; te
     noted.add(dr.key);
   }
   s = { ...s, noted: [...noted] };
+  if (s.req.scale && !noted.has(`scale:${s.req.scale}`)) {
+    noted.add(`scale:${s.req.scale}`);
+    s = { ...s, noted: [...noted] };
+    notes.push(
+      s.req.scale === 'enterprise'
+        ? T(
+            lang,
+            '说实话：这个规模超出了一个人能承接的范围，Jack 是独立开发者，所有工作都自己做。比较实际的做法是先做一次付费评估（上面的价格就是这个），挑一个部门、一个最费时间的流程做试点，比如文档问答或报表自动化，做出效果再扩展。',
+            "To be straight: that scope is beyond what one person can take on, and Jack is a solo developer who does all the work himself. The practical start is a paid assessment (the price above) that picks one department and one time-consuming process for a pilot, such as document Q&A or report automation, and grows from there.",
+          )
+        : T(
+            lang,
+            '说实话：你说的这种大平台，背后是很大的团队做了很多年。Jack 一个人做，适合先做第一期：只做一条最核心的流程（比如下单和付款），上线验证了再扩展。上面的价格是按第一期粗估的。',
+            "To be straight: the platform you mention was built by a large team over years. Working solo, Jack would build a first phase with one core flow (e.g. ordering and payment), launch it, then grow it. The price above is a rough figure for that first phase.",
+          ),
+    );
+  }
   if (KINDS[est.kind].limited && s.estimates === 0) {
     notes.push(
       T(
@@ -521,22 +553,26 @@ function greetTurn(s: ChatState, fromSlug?: string, kind?: string): { state: Cha
   return { state: remember(state, chips), turn: { lang, blocks: [{ t: 'text', text }], chips, trace: [] } };
 }
 
-const YES = /^(要|需要|是|是的|对|对的|可以|能|有|有的|好|好的|嗯|行|需要的|要的|必须|当然|yes|yeah|yep|yup|sure|of course|definitely|correct|right|we do|i do|need it)\b/i;
-const NO = /^(不|不要|不需要|不用|没有|没|不行|不能|无|no|nope|nah|not really|don'?t|we don'?t|none)\b/i;
+// No \b at the end: it never matches after a Chinese character ("需要" / "不用").
+const YES = /^(要|需要|是|是的|对|对的|可以|能|有|有的|好|好的|嗯|行|需要的|要的|必须|当然|yes|yeah|yep|yup|sure|of course|definitely|correct|right|we do|i do|need it)(?![a-z0-9])/i;
+const NO = /^(不|不要|不需要|不用|没有|没|不行|不能|无|no|nope|nah|not really|don'?t|we don'?t|none)(?![a-z0-9])/i;
+const UNSURE_ANSWER = /(不确定|不知道|不清楚|还没想好|看情况|都行|随便|无所谓|not sure|don'?t know|no idea|maybe|either way)/i;
 
 /** A typed answer to the pending question ("3000", "要", "两周") → that slot's option, if it clearly is one. */
-function typedAnswer(s: ChatState, text: string): Requirements | null {
+function typedAnswer(s: ChatState, text: string): { req: Requirements; budgetAssumed?: boolean } | null {
   const slot = s.pending;
   if (!slot) return null;
   const { low } = prepare(text);
+  if (UNSURE_ANSWER.test(low)) return null;
   const short = low.length <= 16;
   const yes = short && YES.test(low);
   const no = short && NO.test(low);
-  const pick = (value: string) => slotOption(slot, value, s.req)?.apply(s.req) ?? null;
+  const wrap = (req: Requirements | null) => (req ? { req } : null);
+  const pick = (value: string) => wrap(slotOption(slot, value, s.req)?.apply(s.req) ?? null);
   const qty = (k: keyof Requirements['quantities']) => {
     const m = low.match(/(\d+(?:,\d{3})*(?:\.\d+)?\s*(?:k|w|千|万)?|[一二两三四五六七八九十百千万几]+)/);
     const n = m ? parseNumber(m[1]) : null;
-    return n && n > 0 ? { ...s.req, quantities: { ...s.req.quantities, [k]: Math.round(n) } } : null;
+    return n && n > 0 ? { req: { ...s.req, quantities: { ...s.req.quantities, [k]: Math.round(n) } } } : null;
   };
   switch (slot) {
     case 'offline':
@@ -558,17 +594,85 @@ function typedAnswer(s: ChatState, text: string): Requirements | null {
       return short ? qty('products') : null;
     case 'budget': {
       if (!short) return null;
-      const m = low.match(/(\d+(?:,\d{3})*(?:\.\d+)?\s*(?:k|w|千|万)?)/);
+      const m = low.match(/(\d+(?:,\d{3})*(?:\.\d+)?(?:k|w|\s?千|\s?万)?\d?|[一二两三四五六七八九十百千万几]*[十百千万][一二两三四五六七八九]?)/);
       const n = m ? parseNumber(m[1]) : null;
       if (!n || n < 50) return null;
-      const usd = /\$|usd|美元|美金|dollar/.test(low);
-      const cny = /¥|元|块|rmb|人民币/.test(low);
-      const currency = usd ? 'USD' : cny ? 'CNY' : s.lang === 'zh' ? 'CNY' : 'USD';
-      return { ...s.req, budget: { min: n, max: n, currency } };
+      const currency = /€|eur|欧元/.test(low)
+        ? 'EUR'
+        : /£|gbp|英镑/.test(low)
+          ? 'GBP'
+          : /\$|usd|美元|美金|dollar|刀/.test(low)
+            ? 'USD'
+            : /¥|元|块|rmb|人民币/.test(low)
+              ? 'CNY'
+              : null;
+      // No currency: guessed from the language, and the reply offers to switch it.
+      return { req: { ...s.req, budget: { min: n, max: n, currency: currency ?? (s.lang === 'zh' ? 'CNY' : 'USD') } }, budgetAssumed: !currency };
+    }
+    case 'deadline': {
+      const d = readDuration(low);
+      if (d) return { req: { ...s.req, deadlineDays: d, rush: d <= 7, relaxed: false } };
+      if (/(不急|不着急|慢慢来|不赶|no rush|no hurry|whenever|take your time)/.test(low)) return { req: { ...s.req, deadlineDays: undefined, rush: false, relaxed: true } };
+      if (/(尽快|越快越好|马上|asap|urgent|as soon as possible)/.test(low)) return { req: { ...s.req, rush: true, relaxed: false } };
+      return null;
     }
     default:
       return null;
   }
+}
+
+const QUESTION = /[?？]|吗|呢\s*$|怎么|如何|多少|能不能|可不可以|是否|有没有|\b(how|what|when|where|who|why|which|can you|could you|do you|does it|is it|are you|will you|would you)\b/i;
+
+/** The sentences of a message that ask something, for FAQ matching ("" if none). */
+function askedPart(text: string): string {
+  const parts: string[] = [];
+  let cur = '';
+  for (const ch of prepare(text).low) {
+    cur += ch;
+    if (/[?？。!！;；\n]/.test(ch)) {
+      parts.push(cur);
+      cur = '';
+    }
+  }
+  if (cur.trim()) parts.push(cur);
+  return parts.filter((p) => QUESTION.test(p)).join(' ');
+}
+
+/**
+ * Worded like a request ("I need a site for my shop", "necesito una página web"), or a
+ * longer statement: a project we couldn't place. A question with no project in it
+ * ("明天天气怎么样") is not one.
+ */
+function looksLikeRequest(text: string): boolean {
+  const { low } = prepare(text);
+  if (/(想做|想要|需要|帮我|做个|做一个|能做|可以做|\b(need|want|build|make|looking for|create|develop|necesito|quiero|website|app)\b)/.test(low)) return true;
+  if (askedPart(text)) return false;
+  const cjk = (low.match(/[\u3400-\u9fff]/g) ?? []).length;
+  const words = (low.match(/[a-z\u00c0-\u024f]{2,}/g) ?? []).length;
+  return cjk >= 8 || words >= 5;
+}
+
+function notUnderstoodTurn(s: ChatState): { state: ChatState; turn: Turn } {
+  const lang = s.lang;
+  const chips: Chip[] = [contactChip(lang)];
+  return {
+    state: s,
+    turn: {
+      lang,
+      blocks: [
+        {
+          t: 'text',
+          text: T(
+            lang,
+            '这句我没太明白。想调整估价的话，直接说要加什么、去掉什么（比如「不需要支付」「还要多语言」），或者在卡片里点选；觉得差不多了，就把估价发给 Jack。',
+            'I didn’t catch that one. To adjust the estimate, say what to add or remove (e.g. “no payments”, “also multiple languages”) or tick it in the card; when it looks right, send it to Jack.',
+          ),
+        },
+      ],
+      chips,
+      trace: [],
+    },
+  };
 }
 
 export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatState; turn: Turn } {
@@ -606,29 +710,39 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
       const text = input.text.trim().slice(0, 2000);
       if (!text) return greetTurn(s);
       s = { ...s, lang: detectLang(text, s.lang) };
-      const parsed = understand(text, { now: ctx.now, fallbackLang: s.lang });
-      // A project description that also asks something ("…，怎么付款？") gets both answers;
-      // without a question, words like "合同" are just part of the project.
-      const asks = /[?？]|吗|怎么|如何|多少|能不能|可不可以|是否|\b(how|what|when|where|who|why|can you|could you|do you|does it|is it|are you|will you)\b/i.test(text);
+      let parsed = understand(text, { now: ctx.now, fallbackLang: s.lang });
       // A bare answer to the pending question ("3000", "要", "不用"), only when the
       // message carries nothing else: "还要 OCR，三十个人用" must not shrink to "30".
       const bare = parsed.signal === 0 || (parsed.signal === 1 && Object.keys(parsed.quantities).length === 1);
       const typed = bare ? typedAnswer(s, text) : null;
       if (typed) {
         const before = s.req;
-        s = { ...s, req: { ...typed, detail: typed.detail + Array.from(text).length }, pending: null };
+        s = { ...s, req: { ...typed.req, detail: typed.req.detail + Array.from(text).length }, pending: null };
+        if (typed.budgetAssumed !== undefined) s = { ...s, budgetAssumed: typed.budgetAssumed };
         return estimateTurn(s, before, { now: ctx.now, text });
       }
-      const faq = matchFaq(text);
+      const whole = matchFaq(text);
+      // Work Jack doesn't take is declined, whatever else the message says.
+      if (whole === 'unsupported' || whole === 'personal_data' || whole === 'bot') return faqTurn(s, whole, ctx.now);
+      // Answering "which kind?" in words: the closest kind wins even on a weak signal.
+      if (s.pending === 'kind' && !parsed.kind) {
+        const top = (Object.entries(parsed.kindScores) as [Kind, number][]).sort((a, b) => b[1] - a[1])[0];
+        if (top && top[1] >= 1) parsed = { ...parsed, kind: top[0], signal: parsed.signal + 2 };
+      }
+      // Only the parts that ask something are checked for FAQs ("…，怎么付款？"): words like
+      // "回复", "合同" or "电话" in a project description are just the project.
+      const asked = askedPart(text);
+      const faq = asked ? matchFaq(asked) : null;
       const hasProject = !!parsed.kind || parsed.signal >= 2 || (!!s.req.kind && parsed.signal >= 1);
-      if (hasProject && faq !== 'unsupported' && faq !== 'bot') {
+      if (hasProject) {
         const before = s.req;
-        s = { ...s, req: mergeRequirements(s.req, parsed, text), pending: null };
+        s = { ...s, req: mergeRequirements(s.req, parsed, text, { kindAsked: s.pending === 'kind' }), pending: null };
         if (parsed.budget) s = { ...s, budgetAssumed: parsed.budget.assumed };
         if (!s.req.kind) return askTurn(s, 'kind', T(s.lang, '收到。还想确认一下项目类型：', 'Thanks. One thing first, the kind of project:'));
-        return estimateTurn(s, before, { now: ctx.now, text, faq: asks ? faq : null });
+        return estimateTurn(s, before, { now: ctx.now, text, faq });
       }
-      if (faq) return faqTurn(s, faq, ctx.now);
+      // A question with no project in it.
+      if (whole && (asked || parsed.signal === 0)) return faqTurn(s, whole, ctx.now);
       const small = smallTalk(text);
       if (small === 'greet') return greetTurn(s, s.req.fromSlug);
       if (small === 'thanks' || small === 'bye' || small === 'ok') {
@@ -648,8 +762,21 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
         s = { ...s, req: mergeRequirements(s.req, parsed, text) };
         return askTurn(s, 'kind', T(s.lang, '收到。你想做的更接近哪一种？', 'Thanks. Which of these is closest?'));
       }
+      // Mid-chat, something that didn't change anything.
+      if (s.estimates > 0) return notUnderstoodTurn(s);
+      // It reads like a request we couldn't place ("I need a site for my shop"): ask, don't give up.
+      if (looksLikeRequest(text)) {
+        const again = s.pending === 'kind';
+        return askTurn(
+          s,
+          'kind',
+          again
+            ? T(s.lang, '还是没认出来，点一个最接近的吧：', 'I still can’t place it; tap the closest one:')
+            : T(s.lang, '收到。你想做的更接近哪一种？', 'Thanks. Which of these is closest to what you need?'),
+        );
+      }
       const lang = s.lang;
-      const chips = s.estimates > 0 ? [contactChip(lang), ...starterChips(lang).slice(5)] : starterChips(lang);
+      const chips = starterChips(lang);
       return {
         state: remember(s, chips),
         turn: {
@@ -659,8 +786,8 @@ export function respond(prev: ChatState, input: Input, ctx: Ctx): { state: ChatS
               t: 'text',
               text: T(
                 lang,
-                '这个我答不上来。我负责估算项目、回答合作相关的问题。可以说说你想做的东西，比如：「做一个带登录的会员网站，大概 200 人用，一个月内上线」。想直接问 Jack，就点「把估价发给 Jack」或去联系页。',
-                'I can’t help with that one. I estimate projects and answer questions about working with Jack. Try describing what you need, e.g. “a members site with login for about 200 people, live within a month”. To ask Jack directly, use “Send this to Jack” or the contact page.',
+                '我没太明白。我负责估算项目、回答合作相关的问题。说说你想做的东西，比如：「做一个带登录的会员网站，大概 200 人用，一个月内上线」。想直接问 Jack，就去联系页留言。',
+                'I didn’t quite get that. I estimate projects and answer questions about working with Jack. Try describing what you need, e.g. “a members site with login for about 200 people, live within a month”. To ask Jack directly, use the contact page.',
               ),
             },
           ],

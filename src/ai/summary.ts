@@ -59,7 +59,8 @@ export function buildSummary({ state, said, note, from }: SummaryInput): string 
     if (q.languages) facts.push(`${q.languages} 种语言`);
     if (req.budget) {
       const [, hi] = toUsd(req.budget, PRICING.cnyPerUsd);
-      facts.push(`预算 ${req.budget.currency === 'CNY' ? `¥${fmtInt(req.budget.max)}（约 $${fmtInt(hi)}）` : `$${fmtInt(req.budget.max)}`}${state.budgetAssumed ? '（币种是猜的）' : ''}`);
+      const sym = { USD: '$', CNY: '¥', EUR: '€', GBP: '£' }[req.budget.currency];
+      facts.push(`预算 ${sym}${fmtInt(req.budget.max)}${req.budget.currency === 'USD' ? '' : `（约 $${fmtInt(hi)}）`}${state.budgetAssumed ? '（币种是猜的）' : ''}`);
     }
     if (req.deadlineDays) facts.push(`${req.deadlineDays} 天内要`);
     if (req.rush) facts.push('着急');
@@ -68,6 +69,8 @@ export function buildSummary({ state, said, note, from }: SummaryInput): string 
     if (req.sensitive) facts.push('涉及敏感数据');
     if (req.hardware) facts.push(req.hardware === 'have' ? '已有显卡电脑' : '需要配置建议');
     if (req.access) facts.push(req.access === 'code' ? '能给代码' : req.access === 'admin' ? '只有后台账号' : '拿不到代码');
+    if (req.kind === 'fix' && req.alsoKind && req.alsoKind !== 'fix') facts.push(`问题出在现有的${KINDS[req.alsoKind].short.zh}`);
+    if (req.scale) facts.push(req.scale === 'platform' ? '平台级的想法（按第一期估）' : '公司级的大范围需求（建议先评估）');
     const off = Object.entries(req.features)
       .filter(([, v]) => v === false)
       .map(([f]) => FEATURES[f as keyof typeof FEATURES]?.label.zh)

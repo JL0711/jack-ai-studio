@@ -27,15 +27,17 @@ function withFeature(req: Requirements, f: keyof Requirements['features'], on: b
 function withQty(req: Requirements, k: keyof Requirements['quantities'], n: number): Requirements {
   return { ...req, quantities: { ...req.quantities, [k]: n } };
 }
-const usdLabel = (usd: number, zhPrefix: string, enPrefix: string): Bi =>
-  bi(`${zhPrefix}${usd.toLocaleString('en-US')} 美元（约 ${(usd * PRICING.cnyPerUsd).toLocaleString('en-US')} 元）`, `${enPrefix}$${usd.toLocaleString('en-US')}`);
+const under = (usd: number): Bi =>
+  bi(`${usd.toLocaleString('en-US')} 美元以下（约 ${(usd * PRICING.cnyPerUsd).toLocaleString('en-US')} 元以下）`, `Under $${usd.toLocaleString('en-US')}`);
 
 export const SLOTS: Record<SlotId, SlotDef> = {
   kind: {
     question: bi('你想做的更接近哪一种？', 'Which is closest to what you need?'),
     known: (r) => r.kind !== null,
     options: () =>
-      (['site', 'webapp', 'rag', 'chatbot', 'local_ai', 'automation', 'miniprogram', 'ecommerce', 'fix'] as Kind[]).map((k) => ({
+      (
+        ['site', 'webapp', 'ecommerce', 'rag', 'chatbot', 'local_ai', 'automation', 'scraper', 'integration', 'voice', 'desktop', 'miniprogram', 'mobile', 'fix'] as Kind[]
+      ).map((k) => ({
         value: k,
         label: KINDS[k].label,
         apply: (r: Requirements) => ({ ...r, kind: k, modify: k === 'fix' ? true : r.modify }),
@@ -184,7 +186,7 @@ export const SLOTS: Record<SlotId, SlotDef> = {
     why: bi('知道预算，我可以直接告诉你够不够，不够的话先做哪些。', 'With a budget I can tell you if it fits, and what to build first if not.'),
     known: (r) => r.budget !== undefined,
     options: () => [
-      { value: '450', label: usdLabel(500, '', 'Under '), apply: (r) => ({ ...r, budget: { min: 250, max: 450, currency: 'USD' } }) },
+      { value: '450', label: under(500), apply: (r) => ({ ...r, budget: { min: 250, max: 450, currency: 'USD' } }) },
       { value: '2000', label: bi('500–2,000 美元（约 3,500–14,000 元）', '$500–2,000'), apply: (r) => ({ ...r, budget: { min: 500, max: 2000, currency: 'USD' } }) },
       { value: '5000', label: bi('2,000–5,000 美元（约 1.4–3.5 万元）', '$2,000–5,000'), apply: (r) => ({ ...r, budget: { min: 2000, max: 5000, currency: 'USD' } }) },
       { value: '9000', label: bi('5,000 美元以上', 'Over $5,000'), apply: (r) => ({ ...r, budget: { min: 5000, max: 9000, currency: 'USD' } }) },

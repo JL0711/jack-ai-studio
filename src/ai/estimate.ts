@@ -9,11 +9,21 @@ import type { Bi, BudgetFit, Estimate, EstimateLine, FeatureId, Kind, Milestone,
 
 const bi = (zh: string, en: string): Bi => ({ zh, en });
 
-/** Can this feature be priced for this kind of project? */
-export function applies(f: FeatureId, kind: Kind): boolean {
-  const only = FEATURE_KINDS[f];
-  return !only || only.includes(kind);
+/** "Online payments" → "online payments", but "SEO basics" and "WeChat login" keep their capitals. */
+export function lowerFirst(label: string): string {
+  return /^[A-Z][a-z]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label;
 }
+
+/** Can this feature be priced for this kind of project? */
+export function applies(f: FeatureId, kind: Kind, features: Requirements['features'] = {}): boolean {
+  const only = FEATURE_KINDS[f];
+  if (!only || only.includes(kind)) return true;
+  // Local models only matter where there is AI: a web app with AI features can run them offline.
+  return f === 'offline' && features.ai_chat === true;
+}
+
+/** Included features a visitor can take out of the base ("暂时不用支付的商城"). */
+const REMOVABLE: FeatureId[] = ['payments', 'auth', 'admin', 'wechat_login', 'uploads'];
 
 export function featureHours(f: FeatureId, kind: Kind): Range {
   return FEATURES[f].byKind?.[kind] ?? FEATURES[f].hours;
@@ -38,16 +48,22 @@ interface Core {
   wanted: FeatureId[];
 }
 
-function confidenceOf(req: Requirements, wanted: number): Estimate['confidence'] {
+/**
+ * How much is known. Deliberately not the number of features: ticking one more
+ * in the card must never lower the margin and with it the top price.
+ */
+function confidenceOf(req: Requirements): Estimate['confidence'] {
+  if (req.scale) return 'low';
   let c = 0;
   if (req.kind) c += 2;
-  c += Math.min(3, wanted);
   c += Math.min(2, Object.keys(req.quantities).length);
+  c += Math.min(1.5, Object.keys(req.features).length * 0.5);
   if (req.budget) c += 0.5;
   if (req.deadlineDays !== undefined) c += 0.5;
   if (req.hasDesign !== undefined) c += 0.5;
-  if (req.detail > 60) c += 1;
-  if (req.detail > 200) c += 1;
+  if (req.detail > 30) c += 1;
+  if (req.detail > 100) c += 1;
+  if (req.detail > 220) c += 1;
   return c >= 6 ? 'high' : c >= 3.5 ? 'medium' : 'low';
 }
 
@@ -56,22 +72,33 @@ function core(req: Requirements, kind: Kind, drop: FeatureId[] = []): Core & { c
   const def = KINDS[kind];
   const modify = req.modify || kind === 'fix';
   const lines: EstimateLine[] = [];
-  const included = modify ? [] : def.included;
-  const baseHours = modify ? def.modifyBase : def.base;
+  // Included features the visitor said they don't need come out of the base.
+  const removed = modify ? [] : def.included.filter((f) => REMOVABLE.includes(f) && (req.features[f] === false || drop.includes(f)));
+  const included = modify ? [] : def.included.filter((f) => !removed.includes(f));
+  let baseHours: Range = modify ? def.modifyBase : def.base;
+  // A single page (landing page, sign-up page) is a smaller site.
+  if (kind === 'site' && !modify && req.quantities.pages === 1) baseHours = [8, 16];
+  for (const f of removed) {
+    const h = featureHours(f, kind);
+    baseHours = [Math.max(Math.ceil(baseHours[0] * 0.5), baseHours[0] - h[0]), Math.max(Math.ceil(baseHours[1] * 0.5), baseHours[1] - h[1])];
+  }
+  const notes: string[][] = [];
+  if (included.length) notes.push([`已包含：${included.map((f) => FEATURES[f].label.zh).join('、')}`, `Includes: ${included.map((f) => lowerFirst(FEATURES[f].label.en)).join(', ')}`]);
+  if (removed.length) notes.push([`不含：${removed.map((f) => FEATURES[f].label.zh).join('、')}`, `Without: ${removed.map((f) => lowerFirst(FEATURES[f].label.en)).join(', ')}`]);
   lines.push({
     id: 'base',
     label: modify
       ? bi(kind === 'fix' ? '读懂现有代码、修改、测试' : `修改现有${def.short.zh}：读懂代码、改动、测试`, kind === 'fix' ? 'Reading the existing code, changes, testing' : `Changes to the existing ${def.short.en}: reading the code, changes, testing`)
-      : bi(`${def.short.zh}的基础部分（设计到上线）`, `The core ${def.short.en} (design to launch)`),
+      : kind === 'site' && req.quantities.pages === 1
+        ? bi('单页网站（设计到上线）', 'A one-page site (design to launch)')
+        : bi(`${def.short.zh}的基础部分（设计到上线）`, `The core ${def.short.en} (design to launch)`),
     hours: baseHours,
-    note: included.length
-      ? bi(`已包含：${included.map((f) => FEATURES[f].label.zh).join('、')}`, `Includes: ${included.map((f) => FEATURES[f].label.en.toLowerCase()).join(', ')}`)
-      : undefined,
+    note: notes.length ? bi(notes.map((n) => n[0]).join('；'), notes.map((n) => n[1]).join('; ')) : undefined,
   });
 
   const wanted: FeatureId[] = [];
   for (const [f, on] of Object.entries(req.features) as [FeatureId, boolean][]) {
-    if (!on || drop.includes(f) || !applies(f, kind)) continue;
+    if (!on || drop.includes(f) || !applies(f, kind, req.features)) continue;
     if (included.includes(f)) {
       lines.push({ id: f, feature: f, label: FEATURES[f].label, hours: [0, 0], included: true });
       continue;
@@ -80,8 +107,8 @@ function core(req: Requirements, kind: Kind, drop: FeatureId[] = []): Core & { c
     let label = FEATURES[f].label;
     if (f === 'integrations') {
       const n = Math.max(1, Math.min(6, req.quantities.integrations ?? 1));
-      if (kind === 'integration') {
-        // The base covers the first one.
+      if (kind === 'integration' || kind === 'automation' || kind === 'scraper') {
+        // The base covers the first one (a script reads its own sheet / posts to its own chat).
         if (n <= 1) continue;
         h = [h[0] * (n - 1), h[1] * (n - 1)];
         label = bi(`再对接 ${n - 1} 个系统`, `${n - 1} more system${n > 2 ? 's' : ''}`);
@@ -122,13 +149,15 @@ function core(req: Requirements, kind: Kind, drop: FeatureId[] = []): Core & { c
   }
 
   const base = lines.reduce<Range>((acc, l) => add(acc, l.hours), [0, 0]);
-  const confidence = confidenceOf(req, wanted.length);
+  const confidence = confidenceOf(req);
   const factors: Estimate['factors'] = [];
-  if (modify) factors.push({ id: 'modify', label: bi('接手已有代码，先读懂再动手', 'Existing code: time to understand it first'), min: 1, max: 1.25 });
+  // (A fix's base already is "reading the existing code, changes, testing".)
+  if (modify && kind !== 'fix') factors.push({ id: 'modify', label: bi('接手已有代码，先读懂再动手', 'Existing code: time to understand it first'), min: 1, max: 1.25 });
   if (modify && req.access === 'none') factors.push({ id: 'access', label: bi('拿不到原来的代码，部分功能可能要重做', 'No access to the old code: some parts may need rebuilding'), min: 1.1, max: 1.4 });
   if (req.sensitive) factors.push({ id: 'sensitive', label: bi('涉及敏感数据：多做安全措施', 'Sensitive data: extra security work'), min: 1.05, max: 1.15 });
   if (def.limited) factors.push({ id: 'limited', label: bi('这类项目 Jack 做得少，多留余量', 'Less common work for Jack: extra margin'), min: 1, max: 1.15 });
-  if (confidence === 'low') factors.push({ id: 'vague', label: bi('需求还比较概括，留出余量', 'Brief still rough: margin for unknowns'), min: 1, max: 1.25 });
+  if (req.scale) factors.push({ id: 'scale', label: bi('平台级的需求：先按第一期估，余量放大', 'Platform-sized idea: priced as a first phase, wider margin'), min: 1, max: 1.4 });
+  else if (confidence === 'low') factors.push({ id: 'vague', label: bi('需求还比较概括，留出余量', 'Brief still rough: margin for unknowns'), min: 1, max: 1.25 });
   else if (confidence === 'medium') factors.push({ id: 'vague', label: bi('还有细节没定，留一点余量', 'Some details open: a little margin'), min: 1, max: 1.12 });
 
   const fmin = factors.reduce((p, f) => p * f.min, 1);
@@ -183,17 +212,22 @@ function budgetFit(req: Requirements, kind: Kind, usd: Range, rush: boolean): Bu
 
 function milestonesFor(usd: Range, days: Range, first: Range): Milestone[] {
   const part = (share: number): Range => [Math.round((usd[0] * share) / 10) * 10, Math.round((usd[1] * share) / 10) * 10];
+  // The last payment is whatever is left, so the payments always add up to the price.
+  const rest = (...paid: Range[]): Range => [usd[0] - paid.reduce((s, r) => s + r[0], 0), usd[1] - paid.reduce((s, r) => s + r[1], 0)];
   if (usd[1] < PRICING.smallJobUsd) {
+    const first = part(0.5);
     return [
-      { label: bi('确认需求后开工', 'Start, once the brief is agreed'), share: 0.5, usd: part(0.5), days: [0, 1] },
-      { label: bi('交付、你验收', 'Delivery and your sign-off'), share: 0.5, usd: part(0.5), days },
+      { label: bi('确认需求后开工', 'Start, once the brief is agreed'), share: 0.5, usd: first, days: [0, 1] },
+      { label: bi('交付、你验收', 'Delivery and your sign-off'), share: 0.5, usd: rest(first), days },
     ];
   }
   const [a, b, c] = PRICING.milestoneSplit;
+  const pa = part(a);
+  const pb = part(b);
   return [
-    { label: bi('书面需求和计划确认', 'Written brief and plan agreed'), share: a, usd: part(a), days: [0, 2] },
-    { label: bi('第一版（约 30% 功能）验收', 'First version (~30%) approved'), share: b, usd: part(b), days: first },
-    { label: bi('全部完成、部署上线、交付源码', 'Everything done, deployed, source handed over'), share: c, usd: part(c), days },
+    { label: bi('书面需求和计划确认', 'Written brief and plan agreed'), share: a, usd: pa, days: [0, 2] },
+    { label: bi('第一版（约 30% 功能）验收', 'First version (~30%) approved'), share: b, usd: pb, days: first },
+    { label: bi('全部完成、部署上线、交付源码', 'Everything done, deployed, source handed over'), share: c, usd: rest(pa, pb), days },
   ];
 }
 
@@ -240,8 +274,11 @@ export function estimate(req: Requirements, opts: EstimateOptions = {}): Estimat
     if (d >= normalDays[1]) deadline = { days: d, status: 'ok' };
     else if (d >= rushDays[0]) {
       rush = d < normalDays[0] || !!req.rush;
-      days = [Math.min(rushDays[0], d), Math.min(Math.max(rushDays[0], d), normalDays[1])];
-      deadline = { days: d, status: rush ? 'rush' : 'ok' };
+      // Only the low end of the work fits at a rush pace: say so instead of shrinking the range.
+      const tight = d < rushDays[1];
+      days = tight ? rushDays : [Math.min(rushDays[0], d), Math.min(Math.max(rushDays[0], d), normalDays[1])];
+      deadline = { days: d, status: rush || tight ? 'rush' : 'ok', tight: tight || undefined };
+      if (tight) rush = true;
     } else {
       const doable = Math.max(1, Math.floor((d * PRICING.maxWeeklyHours) / 7));
       deadline = { days: d, status: 'too_short', mvpHours: [Math.max(1, Math.round(doable * 0.6)), doable] };
@@ -278,7 +315,9 @@ export function estimate(req: Requirements, opts: EstimateOptions = {}): Estimat
   if (rush) risks.push(bi('赶工期时范围要先定死，中途加需求会顺延。', 'On a rush timeline the scope is frozen; additions move the date.'));
   if (def.limited) risks.push(bi('这类项目展览馆里还没有 Jack 的作品，报价多留了余量。', 'Jack has no showcase work of this kind yet, so the range is wider.'));
 
-  const suggested = def.suggest.filter((f) => req.features[f] === undefined && applies(f, kind)).slice(0, 6);
+  // Offered as "+ add": features not chosen yet, including ones taken out (so they can come back).
+  const takenOut = def.included.filter((f) => REMOVABLE.includes(f) && req.features[f] === false);
+  const suggested = [...takenOut, ...def.suggest.filter((f) => req.features[f] !== true && !takenOut.includes(f) && applies(f, kind, req.features))].slice(0, 6);
 
   // The calculation log, shown under "how this was worked out".
   const steps: Bi[] = [];
