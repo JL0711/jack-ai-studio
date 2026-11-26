@@ -13,11 +13,22 @@ import subsetFont from 'subset-font';
 const PIXEL_SOURCE = 'fonts/fusion-pixel/fusion-pixel-12px-proportional-zh_hans.otf.woff2';
 export const PIXEL_OUTPUT = 'src/assets/generated/pixel-subset.woff2';
 
+// Text that is never drawn in the pixel font stays out of the subset, so the font
+// every page preloads doesn't grow with it: the estimate engine's sentences
+// (src/ai), tests, and the demos' sample data (in src/demos only the UI files —
+// *.tsx, *.css, text.ts and registry.ts — are scanned).
+function scanned(full) {
+  const rel = path.relative('src', full).split(path.sep).join('/');
+  if (rel.startsWith('ai/') || rel.startsWith('__tests__/')) return false;
+  if (rel.startsWith('demos/')) return /(^|\/)(text|registry)\.ts$|\.(tsx|css)$/.test(rel);
+  return true;
+}
+
 function sourceFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) return entry.name === 'generated' ? [] : sourceFiles(full);
-    return /\.(tsx?|css)$/.test(entry.name) ? [full] : [];
+    return /\.(tsx?|css)$/.test(entry.name) && scanned(full) ? [full] : [];
   });
 }
 
