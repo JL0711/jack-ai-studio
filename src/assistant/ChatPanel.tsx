@@ -44,11 +44,15 @@ function Thinking({ lines }: { lines: string[] }) {
 function AssistantTurn({
   msg,
   live,
+  liveEstimate,
   onChip,
   onSend,
 }: {
   msg: AssistantMessage;
+  /** The newest reply: its questions and suggestions can be tapped. */
   live: boolean;
+  /** Holds the newest estimate: its feature toggles work. */
+  liveEstimate: boolean;
   onChip: (c: Chip) => void;
   onSend: () => void;
 }) {
@@ -76,11 +80,11 @@ function AssistantTurn({
                 est={b.est}
                 req={b.req}
                 lang={lang}
-                live={live}
+                live={liveEstimate}
                 fresh={msg.fresh}
                 onToggle={(f, on) => void recalcInPlace({ t: 'toggle', feature: f, on }, lang)}
                 onSend={onSend}
-                copyText={live && state ? estimateText(state) : undefined}
+                copyText={liveEstimate && state ? estimateText(state) : undefined}
               />
             );
           case 'links':
@@ -145,6 +149,14 @@ export function ChatPanel({ variant }: { variant: 'drawer' | 'page' }) {
   const reduced = useReducedMotion();
   const lastAssistant = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === 'assistant') return messages[i].id;
+    return null;
+  }, [messages]);
+  // The newest estimate stays editable even when a later message (like "sent") follows it.
+  const lastEstimate = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role === 'assistant' && m.turn.blocks.some((b) => b.t === 'estimate')) return m.id;
+    }
     return null;
   }, [messages]);
   const lastCount = useRef(messages.length);
@@ -225,7 +237,14 @@ export function ChatPanel({ variant }: { variant: 'drawer' | 'page' }) {
               <p>{m.text}</p>
             </div>
           ) : (
-            <AssistantTurn key={m.id} msg={m} live={m.id === lastAssistant && !sending} onChip={onChip} onSend={() => setSending(true)} />
+            <AssistantTurn
+              key={m.id}
+              msg={m}
+              live={m.id === lastAssistant && !sending}
+              liveEstimate={m.id === lastEstimate && !sending}
+              onChip={onChip}
+              onSend={() => setSending(true)}
+            />
           ),
         )}
         {thinking && <Thinking lines={thinking} />}

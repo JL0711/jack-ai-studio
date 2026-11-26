@@ -163,7 +163,10 @@ export async function recalcInPlace(input: Input, lang: Lang) {
     }
   }
   const msg: AssistantMessage = { id: id(), role: 'assistant', turn, at: Date.now(), fresh: true };
-  if (last >= 0) messages[last] = msg;
+  // Replace the newest reply only if it is the estimate being changed; after a later
+  // message (e.g. "sent to Jack") the change gets its own message, so history stays true.
+  const lastMsg = last >= 0 ? (messages[last] as AssistantMessage) : null;
+  if (lastMsg && lastMsg.turn.blocks.some((b) => b.t === 'estimate')) messages[last] = msg;
   else messages.push(msg);
   set({ messages, state: next });
 }
