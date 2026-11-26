@@ -22,8 +22,8 @@ export const DEMOS: Record<string, DemoInfo> = {
   'local-doc-qa': {
     title: { zh: '在线试用：带出处的文档问答', en: 'Try it: document Q&A with sources' },
     note: {
-      zh: '用示例文档，或者你自己的 PDF / Word / TXT 提问，每个回答都标出文件和页码。文件只在你的浏览器里处理，不会上传。浏览器版用关键词检索、摘录原文作答；正式版用 bge-m3 向量检索，由本地 qwen3:14b 写回答，全程离线。',
-      en: 'Ask questions about the sample documents, or your own PDF / Word / TXT files; every answer cites the file and page. Files are processed in your browser and never uploaded. This browser version uses keyword search and quotes the source; the real system uses bge-m3 vector search and a local qwen3:14b model to write the answer, fully offline.',
+      zh: '用示例文档，或者你自己的 PDF / Word / TXT / Markdown 提问，每个回答都标出文件和页码（没有分页的文件标第几部分）；文档里没有的，就直说没有。文件只在你的浏览器里处理，不会上传。浏览器版用关键词检索、摘录原文作答；正式版用 bge-m3 向量检索，由本地 qwen3:14b 写回答，全程离线。',
+      en: 'Ask about the sample documents, or your own PDF / Word / TXT / Markdown files; every answer cites the file and page (or the part, for files without pages), and if the documents don\'t cover a question, it says so. Files are processed in your browser and never uploaded. This browser version uses keyword search and quotes the source; the real system uses bge-m3 vector search and a local qwen3:14b model to write the answer, fully offline.',
     },
     quoteKind: 'rag',
     load: () => import('./local-doc-qa'),
