@@ -60,8 +60,8 @@ export const DEMOS: Record<string, DemoInfo> = {
   'word-annotation-export': {
     title: { zh: '在线试用：Word 批注导出', en: 'Try it: Word annotation export' },
     note: {
-      zh: '粘贴带【批注】的文字，看红字加黄色高亮的效果，再下载真正的 .docx 文件；也可以按标题拆成多篇。文件在你的浏览器里生成，不会上传。',
-      en: 'Paste text with 【annotations】, preview the red text and yellow highlight, then download a real .docx file, or split it into several articles by heading. Files are generated in your browser and never uploaded.',
+      zh: '粘贴带【批注】的文字，或导入你自己的 .docx / .txt，看红字加黄色高亮的效果，再下载真正的 .docx 文件；也可以按标题拆成多篇。文件在你的浏览器里生成，不会上传。浏览器版用一套简洁样式新建文档，正式版用 python-docx 写进你自己的 Word 模板并保留原有样式。',
+      en: 'Paste text with 【annotations】 or import your own .docx / .txt, preview the red text and yellow highlight, then download a real .docx file, or split it into several articles by heading. Files are generated in your browser and never uploaded. The browser version builds a new document with simple styles; the real tool uses python-docx to fill your own Word template and keeps its styles.',
     },
     quoteKind: 'automation',
     load: () => import('./word-annotation-export'),
@@ -69,8 +69,8 @@ export const DEMOS: Record<string, DemoInfo> = {
   'excel-certificates': {
     title: { zh: '在线试用：Excel 名单批量生成证书', en: 'Try it: certificates from an Excel list' },
     note: {
-      zh: '用示例名单，或者上传你自己的 Excel / CSV：先检查问题行，再给每个人生成一张证书，可以下载 PNG 压缩包、合并好的 PDF 和生成记录。文件不会上传。',
-      en: 'Use the sample list or upload your own Excel / CSV: bad rows are checked first, then everyone gets a certificate. Download a ZIP of PNGs, one merged PDF and a log. Files are never uploaded.',
+      zh: '用示例名单，或者上传你自己的 Excel / CSV：先检查问题行，再给每个人生成一张证书，可以下载 PNG 压缩包、合并好的 PDF 和生成记录。文件不会上传。浏览器版用 JavaScript 重做了同样的流程；正式版是 Python 脚本（openpyxl + Pillow）。',
+      en: 'Use the sample list or upload your own Excel / CSV: bad rows are checked first, then everyone gets a certificate. Download a ZIP of PNGs, one merged PDF and a log. Files are never uploaded. This browser version redoes the same steps in JavaScript; the real tool is a Python script (openpyxl + Pillow).',
     },
     quoteKind: 'automation',
     load: () => import('./excel-certificates'),
