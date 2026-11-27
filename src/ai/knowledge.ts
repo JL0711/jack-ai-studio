@@ -154,8 +154,8 @@ export function answerFaq(id: FaqId, ctx: FaqContext): FaqAnswer {
         return {
           text: T(
             lang,
-            `按你说的需求，代码算出来是 **${fmtUsdRange(e.usd)}**（约 ${fmtCnyRange(e.cny)}），大约 ${e.hours[0]}–${e.hours[1]} 小时的工作量。算法很简单：估算工时 × 每小时 $${rate}，再按需求的明确程度留一点余量。正式报价以 Jack 看过需求后书面确认的为准。`,
-            `For what you described, the calculation comes to **${fmtUsdRange(e.usd)}**, about ${e.hours[0]}–${e.hours[1]} hours of work. The method is simple: estimated hours × $${rate}/hour, plus a margin for whatever is still unclear. The final quote is the one Jack confirms in writing after reading your brief.`,
+            `按你说的需求，代码算出来是 **${fmtUsdRange(e.usd)}**（约 ${fmtCnyRange(e.cny)}），大约 ${e.hours[0]}–${e.hours[1]} 小时的工作量。算法很简单：估算工时 × 每小时 $${rate}，再按需求的明确程度留一点余量。价格可以协商，正式报价以 Jack 看过需求后书面确认的为准。`,
+            `For what you described, the calculation comes to **${fmtUsdRange(e.usd)}**, about ${e.hours[0]}–${e.hours[1]} hours of work. The method is simple: estimated hours × $${rate}/hour, plus a margin for whatever is still unclear. The price is open to discussion; the final quote is the one Jack confirms in writing after reading your brief.`,
           ),
           ask: [T(lang, '能做个更便宜的版本吗？', 'Could we start with a cheaper version?'), T(lang, '怎么付款？', 'How would I pay?')],
           contact: true,
@@ -168,8 +168,8 @@ export function answerFaq(id: FaqId, ctx: FaqContext): FaqAnswer {
       return {
         text: T(
           lang,
-          `价格按工作量算：估算工时 × 每小时 $${rate}（约 ¥${rateCny}），给一个区间。下面是按价目表算出来的几个典型范围：\n· 3–5 页的公司官网：${fmtUsdRange(site.usd)}\n· 带登录和后台的 Web 应用：${fmtUsdRange(app.usd)}\n· AI 文档问答系统：${fmtUsdRange(rag.usd)}\n· 处理 Excel / Word 的自动化脚本：${fmtUsdRange(auto.usd)}\n最低 $${PRICING.minimumUsd} 起。说说你的具体需求，我马上算一个更准的。`,
-          `Pricing follows the work: estimated hours × $${rate}/hour, given as a range. Some typical ranges from the price list:\n· A 3–5 page company website: ${fmtUsdRange(site.usd)}\n· A web app with login and an admin panel: ${fmtUsdRange(app.usd)}\n· An AI document Q&A system: ${fmtUsdRange(rag.usd)}\n· An Excel / Word automation script: ${fmtUsdRange(auto.usd)}\nThe smallest job starts at $${PRICING.minimumUsd}. Tell me what you need and I'll work out a closer number.`,
+          `价格按工作量算：估算工时 × 每小时 $${rate}（约 ¥${rateCny}），给一个区间。下面是按价目表算出来的几个典型范围：\n· 3–5 页的公司官网：${fmtUsdRange(site.usd)}\n· 带登录和后台的 Web 应用：${fmtUsdRange(app.usd)}\n· AI 文档问答系统：${fmtUsdRange(rag.usd)}\n· 处理 Excel / Word 的自动化脚本：${fmtUsdRange(auto.usd)}\n最低 $${PRICING.minimumUsd} 起，具体价格可以协商。说说你的具体需求，我马上算一个更准的。`,
+          `Pricing follows the work: estimated hours × $${rate}/hour, given as a range. Some typical ranges from the price list:\n· A 3–5 page company website: ${fmtUsdRange(site.usd)}\n· A web app with login and an admin panel: ${fmtUsdRange(app.usd)}\n· An AI document Q&A system: ${fmtUsdRange(rag.usd)}\n· An Excel / Word automation script: ${fmtUsdRange(auto.usd)}\nThe smallest job starts at $${PRICING.minimumUsd}, and the price is open to discussion. Tell me what you need and I'll work out a closer number.`,
         ),
         ask: [
           T(lang, '我想做一个公司官网', 'I need a company website'),
@@ -192,8 +192,8 @@ export function answerFaq(id: FaqId, ctx: FaqContext): FaqAnswer {
       return {
         text: T(
           lang,
-          `按里程碑付款，每一步你验收了再付下一笔。一般是 ${split}：书面需求和计划确认后付第一笔，第一版（约 30% 功能）验收后付第二笔，全部完成、部署上线、交付源码后付尾款。小项目可以两次付清（开工一半、交付一半）。${e ? `\n按你这次的估价大概是：\n${amounts}` : ''}\n具体的付款方式开工前和 Jack 确认。`,
-          `You pay by milestone, each one after you've approved the work. Usually ${split}: the first when the written brief and plan are agreed, the second when the first version (~30%) is approved, the rest when everything is done, deployed and the source handed over. Small jobs can be two payments (half at start, half on delivery).${e ? `\nFor this estimate that's roughly:\n${amounts}` : ''}\nThe payment method is confirmed with Jack before work starts.`,
+          `按里程碑付款，每一步你验收了再付下一笔。一般是 ${split}：书面需求和计划确认后付第一笔，第一版（约 30% 功能）验收后付第二笔，全部完成、部署上线、交付源码后付尾款。小项目可以两次付清（开工一半、交付一半）。${e ? `\n按你这次的估价大概是：\n${amounts}` : ''}\n付款比例、次数和方式都可以协商，开工前和 Jack 确认。`,
+          `You pay by milestone, each one after you've approved the work. Usually ${split}: the first when the written brief and plan are agreed, the second when the first version (~30%) is approved, the rest when everything is done, deployed and the source handed over. Small jobs can be two payments (half at start, half on delivery).${e ? `\nFor this estimate that's roughly:\n${amounts}` : ''}\nThe split, the number of payments and the method can all be negotiated, and are confirmed with Jack before work starts.`,
         ),
         ask: [T(lang, '第一版多久能看到？', 'When would I see a first version?'), T(lang, '源码归谁？', 'Who owns the code?')],
         contact: !!e,
@@ -365,8 +365,8 @@ export function answerFaq(id: FaqId, ctx: FaqContext): FaqAnswer {
       return {
         text: T(
           lang,
-          `价格按工作量算，所以省钱的办法是少做一点：先做最核心的功能（MVP），上线用起来再加其余部分。在估价卡片里点掉不急的功能，价格会马上重算。`,
-          `Price follows the work, so the way to spend less is to build less at first: the core features (an MVP) now, the rest once it's in use. Untick the less urgent features in the estimate card and the price recalculates instantly.`,
+          `价格可以协商。最省钱的办法是少做一点：先做最核心的功能（MVP），上线用起来再加其余部分。在估价卡片里点掉不急的功能，价格会马上重算；预算确实有限的话，也可以直接和 Jack 谈。`,
+          `The price is open to discussion. The surest way to spend less is to build less at first: the core features (an MVP) now, the rest once it's in use. Untick the less urgent features in the estimate card and the price recalculates instantly; if your budget is fixed, talk to Jack directly too.`,
         ),
         ask: e ? [] : [T(lang, '我先说说需求', 'Let me describe my project')],
       };

@@ -119,6 +119,6 @@ export function estimateText(state: ChatState): string {
   for (const l of est.lines) out.push(`- ${l.label[state.lang]}: ${l.included ? (zh ? '已包含' : 'included') : fmtHours(l.hours, state.lang)}`);
   out.push(zh ? '付款节点：' : 'Payments:');
   for (const m of est.milestones) out.push(`- ${m.label[state.lang]}: ${Math.round(m.share * 100)}% (${fmtUsdRange(m.usd)})`);
-  out.push(zh ? '这是网站自动算出的粗估，正式报价以 Jack 书面确认为准。' : 'An automatic rough estimate; the final quote is the one Jack confirms in writing.');
+  out.push(zh ? '这是网站自动算出的粗估，价格和付款方式都可以协商，以 Jack 书面确认为准。' : 'An automatic rough estimate; price and payment terms are negotiable, and what is agreed in writing is final.');
   return out.join('\n');
 }

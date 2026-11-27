@@ -190,6 +190,7 @@ export function EstimateCard({ est, req, lang, live, onToggle, onSend, onLink, c
             </li>
           ))}
         </ol>
+        <p className="as-ms-note">{t('est.milestonesNote')}</p>
       </details>
 
       {live && (
